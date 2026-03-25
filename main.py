@@ -19,12 +19,10 @@ symbol_count = {
 }
 
 symbol_value = {
-    # Rebalanced payouts so common wins still feel rewarding
-    # while rarer symbols remain the highest-value outcomes.
-    "A" : 25,
-    "B" : 15,
-    "C" : 10,
-    "D" : 8
+    "A" : 35,
+    "B" : 25,
+    "C" : 15,
+    "D" : 5
 }
 
 def check_winnings(columns, lines, bet, values):
