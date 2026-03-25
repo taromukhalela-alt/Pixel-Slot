@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixel Slot Studio</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero__copy">
+          <p class="eyebrow">Pixel-inspired slot machine</p>
+          <h1>Pixel Slot Studio</h1>
+          <p class="hero__text">
+            A playful local web app with soft surfaces, smooth reel motion, and instant round feedback.
+          </p>
+        </div>
+        <div class="hero__orbs" aria-hidden="true">
+          <span class="orb orb--blue"></span>
+          <span class="orb orb--green"></span>
+          <span class="orb orb--peach"></span>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel machine-panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Reels</p>
+              <h2>Spin for a line match</h2>
+            </div>
+            <div class="status-pill" id="status-pill">Ready for a fresh spin.</div>
+          </div>
+
+          <div class="reels" id="reels"></div>
+
+          <div class="result-strip">
+            <div>
+              <span class="result-strip__label">Last win</span>
+              <strong id="last-win">R0</strong>
+            </div>
+            <div>
+              <span class="result-strip__label">Net change</span>
+              <strong id="last-net">R0</strong>
+            </div>
+            <div>
+              <span class="result-strip__label">Winning lines</span>
+              <strong id="winning-lines">-</strong>
+            </div>
+          </div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="panel stats-grid">
+            <article class="stat-card">
+              <span class="stat-card__label">Balance</span>
+              <strong id="balance">R0</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Spin total</span>
+              <strong id="spin-total">R0</strong>
+            </article>
+          </section>
+
+          <section class="panel controls-panel">
+            <div class="panel__header compact">
+              <div>
+                <p class="panel__eyebrow">Session setup</p>
+                <h2>Tune your round</h2>
+              </div>
+            </div>
+
+            <label class="field">
+              <span>Deposit</span>
+              <div class="field__row">
+                <input id="deposit-input" type="number" min="1" step="1" value="250" />
+                <button id="deposit-button" class="button button--soft">Add funds</button>
+              </div>
+            </label>
+
+            <div class="stepper-group">
+              <div class="stepper-labels">
+                <span>Lines</span>
+                <strong id="lines-value">3</strong>
+              </div>
+              <div class="stepper">
+                <button data-adjust="lines" data-delta="-1" aria-label="Decrease lines">-</button>
+                <button data-adjust="lines" data-delta="1" aria-label="Increase lines">+</button>
+              </div>
+            </div>
+
+            <div class="stepper-group">
+              <div class="stepper-labels">
+                <span>Bet per line</span>
+                <strong id="bet-value">10</strong>
+              </div>
+              <div class="stepper">
+                <button data-adjust="bet" data-delta="-1" aria-label="Decrease bet">-</button>
+                <button data-adjust="bet" data-delta="1" aria-label="Increase bet">+</button>
+              </div>
+            </div>
+
+            <button id="spin-button" class="button button--primary">Spin reels</button>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <template id="reel-template">
+      <div class="reel">
+        <div class="reel__symbols"></div>
+      </div>
+    </template>
+
+    <template id="symbol-template">
+      <div class="symbol-card">
+        <span></span>
+      </div>
+    </template>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
