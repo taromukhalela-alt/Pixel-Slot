@@ -81,8 +81,54 @@
             All amounts shown in Pixel Slot Studio are fictional play money, not real currency.
           </p>
 
+          <!-- Session Stats HUD -->
+          <div class="session-stats" id="session-stats">
+            <div class="session-stats__item">
+              <span class="session-stats__label">Session Won</span>
+              <strong class="session-stats__value" id="session-won">R0</strong>
+            </div>
+            <div class="session-stats__item">
+              <span class="session-stats__label">Luckiest Spin</span>
+              <strong class="session-stats__value lucky" id="luckiest-spin">-</strong>
+            </div>
+            <div class="session-stats__item">
+              <span class="session-stats__label">Spins in Session</span>
+              <strong class="session-stats__value" id="session-spins">0</strong>
+            </div>
+          </div>
+
           <div class="machine-actions">
             <button id="spin-button" class="button button--primary machine-spin-button" type="button">Spin reels</button>
+            <button id="turbo-toggle" class="turbo-toggle" type="button" aria-pressed="false">
+              <span class="turbo-indicator">⚡</span>
+              <span class="turbo-label">Turbo</span>
+            </button>
+          </div>
+
+          <!-- Auto-Spin Panel -->
+          <div class="auto-spin-panel" id="auto-spin-panel">
+            <div class="auto-spin-header">
+              <span class="auto-spin-title">🔄 Auto-Spin</span>
+              <div class="auto-spin-counts">
+                <button class="auto-spin-count" data-spins="10" type="button">10</button>
+                <button class="auto-spin-count" data-spins="25" type="button">25</button>
+                <button class="auto-spin-count" data-spins="50" type="button">50</button>
+              </div>
+            </div>
+            <div class="auto-spin-options">
+              <label for="auto-threshold">Stop at multiplier:</label>
+              <input type="number" id="auto-threshold" class="auto-spin-threshold" value="5" min="1" step="1" />
+              <span style="color: var(--muted); font-size: 0.8rem;">×</span>
+            </div>
+            <div class="auto-spin-progress" id="auto-spin-progress" style="display: none;">
+              <span id="auto-spin-status">Spinning...</span>
+              <div class="auto-spin-progress-bar">
+                <div class="auto-spin-progress-fill" id="auto-spin-fill" style="width: 0%"></div>
+              </div>
+              <span id="auto-spin-countdown">0/0</span>
+            </div>
+            <button id="auto-spin-start" class="auto-spin-start" type="button">▶ Start Auto-Spin</button>
+            <button id="auto-spin-stop" class="auto-spin-stop" type="button" style="display: none;">■ Stop Auto-Spin</button>
           </div>
 
           <div class="result-strip">
@@ -172,10 +218,17 @@
                 <span>Bet per line</span>
                 <strong id="bet-value">10</strong>
               </div>
-              <div class="stepper">
+              <div class="bet-input-group">
                 <button data-adjust="bet" data-delta="-1" aria-label="Decrease bet" type="button">-</button>
+                <input type="number" id="bet-text-input" class="bet-text-input" value="10" min="1" aria-label="Enter bet amount" />
                 <button data-adjust="bet" data-delta="1" aria-label="Increase bet" type="button">+</button>
               </div>
+            </div>
+
+            <!-- Easy Mode Cap Warning -->
+            <div class="easy-cap-warning" id="easy-cap-warning" style="display: none;">
+              <span class="easy-cap-warning__icon">⚠️</span>
+              <span>Easy Mode has a balance cap of <strong id="easy-cap-amount">R100,000</strong>. Deposits beyond this limit will be rejected.</span>
             </div>
           </section>
         </aside>

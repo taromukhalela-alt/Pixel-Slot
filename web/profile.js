@@ -36,7 +36,9 @@ const achievementGridEl = document.getElementById("achievement-grid");
 const state = {
   profile: null,
   badges: [],
+  storeBadges: [],
   cosmetics: null,
+  inventory: {},
   stats: null,
   ranks: null,
   achievements: [],
@@ -199,6 +201,147 @@ function renderBadges() {
     node.title = badge.description;
     badgeGridEl.appendChild(node);
   }
+  
+  // Populate badge selector with store badges (purchasable ones)
+  const badgeSelectorEl = document.getElementById("badge-selector");
+  const selectedBadgeInput = document.getElementById("selected-badge-input");
+  if (badgeSelectorEl && selectedBadgeInput) {
+    selectedBadgeInput.innerHTML = '<option value="">None</option>';
+    const ownedBadges = state.storeBadges.filter(b => b.owned);
+    for (const badge of ownedBadges) {
+      const option = document.createElement("option");
+      option.value = badge.id;
+      option.textContent = `${badge.icon || "🏅"} ${badge.name}`;
+      if (state.profile.selectedBadge === badge.id) {
+        option.selected = true;
+      }
+      selectedBadgeInput.appendChild(option);
+    }
+    badgeSelectorEl.style.display = ownedBadges.length > 0 ? "block" : "none";
+  }
+}
+
+function renderOwnedThemes() {
+  const themesGridEl = document.getElementById("owned-themes-grid");
+  const currentThemeNameEl = document.getElementById("current-theme-name");
+  
+  if (!themesGridEl) return;
+  
+  themesGridEl.innerHTML = "";
+  
+  // Theme icons mapping
+  const themeIcons = {
+    synthwave: "🌆",
+    synthwave90s: "🌃",
+    gruvbox: "🐻",
+    "tokyo-night": "🌃",
+    "catppuccin-frappe": "🐱",
+    "catppuccin-latte": "☕",
+    "off-white": "⬜",
+    oneui: "📱",
+    "apple-glass": "🍎",
+    apple: "🍎",
+    dark: "🌙",
+    light: "☀️",
+  };
+  
+  const themeCategories = {
+    synthwave: "Retro/Synth",
+    synthwave90s: "Retro/Synth",
+    gruvbox: "Developer",
+    "tokyo-night": "Developer",
+    "catppuccin-frappe": "Developer",
+    "catppuccin-latte": "Developer",
+    "off-white": "Clean/Modern",
+    oneui: "Clean/Modern",
+    "apple-glass": "Clean/Modern",
+    apple: "Legacy",
+    dark: "Legacy",
+    light: "Legacy",
+  };
+  
+  // Get owned themes from inventory
+  const ownedThemes = state.inventory?.themes || [];
+  
+  // Always show default themes
+  const defaultThemes = ["apple", "dark", "light"];
+  const allThemes = [...new Set([...defaultThemes, ...ownedThemes])];
+  
+  // Current applied theme
+  const currentTheme = state.profile.selectedTheme || window.themeEngine?.getCurrentTheme() || "apple";
+  
+  if (currentThemeNameEl) {
+    const themeName = currentTheme.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+    currentThemeNameEl.textContent = themeName;
+  }
+  
+  for (const themeId of allThemes) {
+    const card = document.createElement("button");
+    card.type = "button";
+    const isOwned = ownedThemes.includes(themeId) || defaultThemes.includes(themeId);
+    card.disabled = !isOwned;
+    card.className = `theme-showcase-card ${currentTheme === themeId ? "is-active" : ""}`;
+    card.dataset.theme = themeId;
+    
+    const icon = themeIcons[themeId] || "🎨";
+    const category = themeCategories[themeId] || "Custom";
+    const name = themeId.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+    
+    card.innerHTML = `
+      <div class="theme-showcase-card__preview" data-theme="${themeId}">${icon}</div>
+      <div class="theme-showcase-card__name">${name}</div>
+      <div class="theme-showcase-card__category">${category}</div>
+      ${!isOwned ? '<small style="color: var(--muted);">🔒 Not owned</small>' : ''}
+    `;
+    
+    if (isOwned) {
+      card.addEventListener("click", async () => {
+        if (!state.profile) return;
+        
+        // Apply theme using theme engine
+        if (window.themeEngine) {
+          window.themeEngine.applyTheme(themeId);
+        }
+        
+        // Update state with new theme
+        const oldTheme = state.profile.selectedTheme;
+        state.profile.selectedTheme = themeId;
+        
+        // Update UI
+        document.querySelectorAll(".theme-showcase-card").forEach(c => c.classList.remove("is-active"));
+        card.classList.add("is-active");
+        if (currentThemeNameEl) {
+          currentThemeNameEl.textContent = name;
+        }
+        
+        // Auto-save to backend if theme changed
+        if (themeId !== oldTheme) {
+          try {
+            const payload = await requestJson("/api/profile", {
+              method: "POST",
+              body: JSON.stringify({
+                displayName: state.profile.displayName,
+                bio: state.profile.bio,
+                selectedSkin: state.profile.selectedSkin,
+                selectedBanner: state.profile.selectedBanner,
+                selectedAvatar: state.profile.selectedAvatar,
+                selectedBadge: state.profile.selectedBadge,
+                selectedTheme: themeId,
+              }),
+            });
+            applyPayload(payload);
+            profileStatusEl.textContent = "Theme updated.";
+          } catch (error) {
+            // Revert on error
+            state.profile.selectedTheme = oldTheme;
+            profileStatusEl.textContent = error.message;
+          }
+        }
+      });
+    }
+    
+    themesGridEl.appendChild(card);
+  }
 }
 
 function getBadgeIcon(tone) {
@@ -311,12 +454,15 @@ function renderCosmetics() {
 function applyPayload(payload) {
   state.profile = payload.profile;
   state.badges = payload.badges || [];
+  state.storeBadges = payload.storeBadges || [];
   state.cosmetics = payload.cosmetics || { skins: [], banners: [], avatars: [] };
   state.stats = payload.stats;
   state.ranks = payload.ranks;
+  state.inventory = payload.stats?.inventory || {};
   setFormDisabled(false);
   renderProfileCard();
   renderBadges();
+  renderOwnedThemes();
   renderCosmetics();
 }
 
@@ -372,6 +518,8 @@ async function submitProfile(event) {
         selectedSkin: state.profile.selectedSkin,
         selectedBanner: state.profile.selectedBanner,
         selectedAvatar: state.profile.selectedAvatar,
+        selectedBadge: state.profile.selectedBadge,
+        selectedTheme: state.profile.selectedTheme,
         avatarUpload: state.avatarUpload,
         bannerUpload: state.bannerUpload,
         clearAvatar: state.clearAvatar,
@@ -440,6 +588,34 @@ clearBannerButtonEl.addEventListener("click", () => {
 });
 
 formEl.addEventListener("submit", submitProfile);
+
+// Badge selector - auto-save when selection changes
+const selectedBadgeInputEl = document.getElementById("selected-badge-input");
+if (selectedBadgeInputEl) {
+  selectedBadgeInputEl.addEventListener("change", async () => {
+    if (!state.profile) return;
+    const newBadge = selectedBadgeInputEl.value;
+    state.profile.selectedBadge = newBadge;
+    try {
+      const payload = await requestJson("/api/profile", {
+        method: "POST",
+        body: JSON.stringify({
+          displayName: state.profile.displayName,
+          bio: state.profile.bio,
+          selectedSkin: state.profile.selectedSkin,
+          selectedBanner: state.profile.selectedBanner,
+          selectedAvatar: state.profile.selectedAvatar,
+          selectedBadge: newBadge,
+          selectedTheme: state.profile.selectedTheme,
+        }),
+      });
+      applyPayload(payload);
+      profileStatusEl.textContent = "Badge updated.";
+    } catch (error) {
+      profileStatusEl.textContent = error.message;
+    }
+  });
+}
 
 renderSignedOutState("Loading profile...");
 loadProfile();

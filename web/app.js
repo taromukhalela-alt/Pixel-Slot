@@ -37,6 +37,24 @@ const depositInput = document.getElementById("deposit-input");
 const depositButton = document.getElementById("deposit-button");
 const spinButton = document.getElementById("spin-button");
 const betValueEl = document.getElementById("bet-value");
+const betTextInputEl = document.getElementById("bet-text-input");
+const turboToggleEl = document.getElementById("turbo-toggle");
+const easyCapWarningEl = document.getElementById("easy-cap-warning");
+const easyCapAmountEl = document.getElementById("easy-cap-amount");
+
+// Session Stats Elements
+const sessionWonEl = document.getElementById("session-won");
+const luckiestSpinEl = document.getElementById("luckiest-spin");
+const sessionSpinsEl = document.getElementById("session-spins");
+
+// Auto-Spin Elements
+const autoSpinStartEl = document.getElementById("auto-spin-start");
+const autoSpinStopEl = document.getElementById("auto-spin-stop");
+const autoThresholdEl = document.getElementById("auto-threshold");
+const autoSpinProgressEl = document.getElementById("auto-spin-progress");
+const autoSpinFillEl = document.getElementById("auto-spin-fill");
+const autoSpinCountdownEl = document.getElementById("auto-spin-countdown");
+const autoSpinStatusEl = document.getElementById("auto-spin-status");
 
 const symbols = ["A", "B", "C", "D"];
 
@@ -50,6 +68,21 @@ const state = {
   difficultyOptions: [],
   needsDifficultySelection: false,
   modeChooserOpen: false,
+  // New QoL Features
+  turboMode: false,
+  sessionStats: {
+    totalWon: 0,
+    luckiestMultiplier: 0,
+    spins: 0,
+  },
+  // Auto-Spin State
+  autoSpin: {
+    enabled: false,
+    count: 0,
+    remaining: 0,
+    threshold: 5,
+    selectedCount: null,
+  },
 };
 
 function currency(value) {
@@ -98,6 +131,211 @@ function createReels() {
   }
 }
 
+// ================================
+// SESSION STATS FUNCTIONS
+// ================================
+
+function updateSessionStats(result) {
+  if (result.lastWin > 0 && result.bet > 0) {
+    const multiplier = result.lastWin / (result.bet * 3);
+    
+    // Update total won this session
+    state.sessionStats.totalWon += result.lastWin;
+    sessionWonEl.textContent = currency(state.sessionStats.totalWon);
+    sessionWonEl.classList.toggle("positive", state.sessionStats.totalWon > 0);
+    sessionWonEl.classList.toggle("negative", state.sessionStats.totalWon < 0);
+    
+    // Update luckiest spin
+    if (multiplier > state.sessionStats.luckiestMultiplier) {
+      state.sessionStats.luckiestMultiplier = multiplier;
+      luckiestSpinEl.textContent = `${multiplier.toFixed(1)}×`;
+    }
+    
+    // Update session spins
+    state.sessionStats.spins++;
+    sessionSpinsEl.textContent = state.sessionStats.spins;
+  }
+}
+
+function resetSessionStats() {
+  state.sessionStats = {
+    totalWon: 0,
+    luckiestMultiplier: 0,
+    spins: 0,
+  };
+  sessionWonEl.textContent = "R0";
+  sessionWonEl.classList.remove("positive", "negative");
+  luckiestSpinEl.textContent = "-";
+  sessionSpinsEl.textContent = "0";
+}
+
+// ================================
+// TURBO MODE FUNCTIONS
+// ================================
+
+function toggleTurboMode() {
+  state.turboMode = !state.turboMode;
+  turboToggleEl.classList.toggle("is-active", state.turboMode);
+  turboToggleEl.setAttribute("aria-pressed", state.turboMode);
+  turboToggleEl.querySelector(".turbo-label").textContent = state.turboMode ? "Turbo ON" : "Turbo";
+}
+
+// ================================
+// AUTO-SPIN FUNCTIONS
+// ================================
+
+function selectAutoSpinCount(count) {
+  state.autoSpin.selectedCount = count;
+  document.querySelectorAll(".auto-spin-count").forEach((btn) => {
+    btn.classList.toggle("is-selected", parseInt(btn.dataset.spins, 10) === count);
+  });
+}
+
+function startAutoSpin() {
+  if (!state.authenticated || state.isSpinning) return;
+  
+  const count = state.autoSpin.selectedCount || 10;
+  let threshold = parseFloat(autoThresholdEl.value);
+  
+  // Validate threshold is a positive number
+  if (isNaN(threshold) || threshold < 1) {
+    threshold = 5;
+    autoThresholdEl.value = "5";
+  }
+  
+  state.autoSpin = {
+    enabled: true,
+    count: count,
+    remaining: count,
+    threshold: threshold,
+    selectedCount: count,
+  };
+  
+  autoSpinStartEl.style.display = "none";
+  autoSpinStopEl.style.display = "block";
+  autoSpinProgressEl.style.display = "flex";
+  updateAutoSpinProgress();
+  
+  executeAutoSpin();
+}
+
+function stopAutoSpin() {
+  state.autoSpin.enabled = false;
+  autoSpinStartEl.style.display = "block";
+  autoSpinStopEl.style.display = "none";
+  autoSpinProgressEl.style.display = "none";
+  autoSpinStatusEl.textContent = "Stopped";
+}
+
+function updateAutoSpinProgress() {
+  const total = state.autoSpin.count;
+  const remaining = state.autoSpin.remaining;
+  const completed = total - remaining;
+  const percent = (completed / total) * 100;
+  
+  autoSpinFillEl.style.width = `${percent}%`;
+  autoSpinCountdownEl.textContent = `${completed}/${total}`;
+}
+
+async function executeAutoSpin() {
+  if (!state.autoSpin.enabled || state.autoSpin.remaining <= 0) {
+    stopAutoSpin();
+    statusPillEl.textContent = "Auto-spin completed!";
+    return;
+  }
+  
+  if (state.isSpinning || !state.authenticated || state.needsDifficultySelection) {
+    // Wait and retry
+    await sleep(100);
+    if (state.autoSpin.enabled) {
+      executeAutoSpin();
+    }
+    return;
+  }
+  
+  // Check if balance is sufficient
+  const balance = state.user?.balance ?? 0;
+  if (balance < state.bet * 3) {
+    stopAutoSpin();
+    statusPillEl.textContent = "Insufficient balance for auto-spin.";
+    return;
+  }
+  
+  state.autoSpin.remaining--;
+  updateAutoSpinProgress();
+  autoSpinStatusEl.textContent = "Spinning...";
+  
+  try {
+    const data = await requestJson("/api/spin", {
+      method: "POST",
+      body: JSON.stringify({ bet: state.bet }),
+    });
+    
+    state.authenticated = data.authenticated;
+    state.user = data.user;
+    state.difficultyOptions = data.difficultyOptions || [];
+    state.needsDifficultySelection = data.needsDifficultySelection;
+    renderResult(data);
+    renderAccount();
+    renderDifficultyChooser();
+    updateSessionStats(data);
+    updateControls();
+    animateSpin(data.lastSpin, data.winningLines || []);
+    
+    // Check if threshold reached
+    if (data.lastWin > 0 && data.bet > 0) {
+      const multiplier = data.lastWin / (data.bet * 3);
+      if (multiplier >= state.autoSpin.threshold) {
+        stopAutoSpin();
+        statusPillEl.textContent = `🎉 Auto-spin stopped! Hit ${multiplier.toFixed(1)}× multiplier!`;
+        return;
+      }
+    }
+    
+    // Check if session ended (no more spins)
+    if (!state.autoSpin.enabled || state.autoSpin.remaining <= 0) {
+      stopAutoSpin();
+      return;
+    }
+    
+    // Continue auto-spin after animation
+    const animDuration = state.turboMode ? 400 : 1400;
+    setTimeout(() => {
+      if (state.autoSpin.enabled) {
+        executeAutoSpin();
+      }
+    }, animDuration);
+    
+  } catch (error) {
+    statusPillEl.textContent = error.message;
+    stopAutoSpin();
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ================================
+// EASY MODE CAP WARNING
+// ================================
+
+function updateEasyCapWarning() {
+  const isEasyMode = state.user?.difficulty === "easy";
+  const easyCap = 100000; // R100,000 cap for Easy mode
+  
+  if (isEasyMode) {
+    easyCapWarningEl.style.display = "flex";
+    easyCapAmountEl.textContent = currency(easyCap);
+  } else {
+    easyCapWarningEl.style.display = "none";
+  }
+}
+
+// ================================
+// EXISTING FUNCTIONS
+// ================================
+
 function renderAuthMode() {
   document.querySelectorAll("[data-auth-mode]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.authMode === state.authMode);
@@ -128,6 +366,8 @@ function updateControls() {
   const maxBetPerLine = Math.max(1, Math.floor(Math.min(balance, cap) / 3));
   state.bet = clamp(state.bet, 1, maxBetPerLine || 1);
   betValueEl.textContent = state.bet;
+  betTextInputEl.value = state.bet;
+  betTextInputEl.max = maxBetPerLine || 1;
 
   balanceEl.textContent = currency(balance);
   spinTotalEl.textContent = currency(state.bet * 3);
@@ -141,12 +381,17 @@ function updateControls() {
     state.authenticated &&
     !state.needsDifficultySelection &&
     !state.isSpinning &&
+    !state.autoSpin.enabled &&
     balance >= state.bet * 3 &&
     state.bet * 3 <= cap;
 
   spinButton.disabled = !canSpin;
   depositButton.disabled = !state.authenticated || state.needsDifficultySelection;
   depositInput.disabled = !state.authenticated || state.needsDifficultySelection;
+  betTextInputEl.disabled = !state.authenticated || state.needsDifficultySelection;
+  
+  // Update easy cap warning
+  updateEasyCapWarning();
 }
 
 function renderResult(data) {
@@ -182,16 +427,25 @@ function animateSpin(finalColumns, winningLines) {
     requestAnimationFrame(() => {
       const cardHeight = animatedCards[0].getBoundingClientRect().height + 14;
       const distance = (previewSymbols.length - 3) * cardHeight;
-      reelState.track.style.transition = `transform ${820 + columnIndex * 180}ms cubic-bezier(0.2, 0.82, 0.2, 1)`;
+      // Turbo mode makes animation faster
+      const duration = state.turboMode ? 200 + columnIndex * 50 : 820 + columnIndex * 180;
+      reelState.track.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.82, 0.2, 1)`;
       reelState.track.style.transform = `translateY(-${distance}px)`;
     });
   });
 
+  // Turbo mode makes final reveal faster
+  const delay = state.turboMode ? 350 : 1280;
   window.setTimeout(() => {
     paintFinalGrid(finalColumns, winningLines);
     state.isSpinning = false;
     updateControls();
-  }, 1280);
+    
+    // Continue auto-spin if enabled
+    if (state.autoSpin.enabled && state.autoSpin.remaining > 0) {
+      setTimeout(() => executeAutoSpin(), 50);
+    }
+  }, delay);
 }
 
 async function requestJson(url, options = {}) {
@@ -261,6 +515,8 @@ function renderDifficultyChooser() {
         });
         state.modeChooserOpen = false;
         applySnapshot(payload);
+        // Reset session stats when changing mode
+        resetSessionStats();
       } catch (error) {
         statusPillEl.textContent = error.message;
       }
@@ -282,11 +538,15 @@ function applySnapshot(data) {
   renderAccount();
   renderDifficultyChooser();
   updateControls();
+  // Update easy cap warning
+  updateEasyCapWarning();
 }
 
 async function refreshState() {
   const data = await requestJson("/api/state");
   applySnapshot(data);
+  // Reset session stats on refresh
+  resetSessionStats();
 }
 
 async function deposit() {
@@ -304,7 +564,7 @@ async function deposit() {
 }
 
 async function spin() {
-  if (state.isSpinning || !state.authenticated || state.needsDifficultySelection) {
+  if (state.isSpinning || !state.authenticated || state.needsDifficultySelection || state.autoSpin.enabled) {
     return;
   }
   statusPillEl.textContent = "Spinning reels...";
@@ -320,6 +580,8 @@ async function spin() {
     renderResult(data);
     renderAccount();
     renderDifficultyChooser();
+    updateSessionStats(data);
+    updateControls();
     animateSpin(data.lastSpin, data.winningLines || []);
   } catch (error) {
     statusPillEl.textContent = error.message;
@@ -339,6 +601,8 @@ async function submitAuth(event) {
     usernameInputEl.value = "";
     passwordInputEl.value = "";
     applySnapshot(payload);
+    // Reset session stats on login
+    resetSessionStats();
   } catch (error) {
     statusPillEl.textContent = error.message;
   }
@@ -351,7 +615,10 @@ async function logout() {
       body: JSON.stringify({}),
     });
     state.modeChooserOpen = false;
+    stopAutoSpin();
     await refreshState();
+    // Reset session stats on logout
+    resetSessionStats();
   } catch (error) {
     statusPillEl.textContent = error.message;
   }
@@ -366,6 +633,10 @@ function openModeChooser() {
   renderDifficultyChooser();
 }
 
+// ================================
+// EVENT LISTENERS
+// ================================
+
 document.querySelectorAll("[data-auth-mode]").forEach((button) => {
   button.addEventListener("click", () => {
     state.authMode = button.dataset.authMode;
@@ -377,8 +648,51 @@ document.querySelectorAll("[data-adjust]").forEach((button) => {
   button.addEventListener("click", () => {
     const delta = Number.parseInt(button.dataset.delta, 10);
     state.bet = Math.max(1, state.bet + delta);
+    betTextInputEl.value = state.bet;
     updateControls();
   });
+});
+
+// Bet text input
+betTextInputEl.addEventListener("input", (e) => {
+  const value = parseInt(e.target.value, 10);
+  if (!isNaN(value) && value > 0) {
+    state.bet = value;
+    updateControls();
+  }
+});
+
+betTextInputEl.addEventListener("blur", (e) => {
+  // Ensure valid value on blur
+  const value = clamp(parseInt(e.target.value, 10) || 1, 1, parseInt(e.target.max, 10) || 1);
+  state.bet = value;
+  e.target.value = value;
+  updateControls();
+});
+
+betTextInputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.target.blur();
+    spinButton.focus();
+  }
+});
+
+// Turbo toggle
+turboToggleEl.addEventListener("click", toggleTurboMode);
+
+// Auto-spin controls
+document.querySelectorAll(".auto-spin-count").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    selectAutoSpinCount(parseInt(btn.dataset.spins, 10));
+  });
+});
+
+autoSpinStartEl.addEventListener("click", startAutoSpin);
+autoSpinStopEl.addEventListener("click", stopAutoSpin);
+
+// Theme change listener
+window.addEventListener("themechange", (e) => {
+  console.log("Theme changed to:", e.detail.theme);
 });
 
 authFormEl.addEventListener("submit", submitAuth);
@@ -398,8 +712,12 @@ difficultyModalEl.addEventListener("click", (event) => {
   renderDifficultyChooser();
 });
 
+// Initialize
 createReels();
 renderAuthMode();
 refreshState().catch((error) => {
   statusPillEl.textContent = error.message;
 });
+
+// Set default auto-spin count
+selectAutoSpinCount(10);

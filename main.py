@@ -28,6 +28,7 @@ MODE_CONFIG = {
         "starting_limit": 100000.0,
         "a_denominator": 1000.0,
         "cap": 100000.0,
+        "balance_cap": 100000.0,  # Hard balance cap for Easy Mode
     },
     "medium": {
         "label": "Medium",
@@ -40,6 +41,72 @@ MODE_CONFIG = {
         "starting_limit": 200.0,
         "a_denominator": 10.0,
         "cap": 200.0,
+    },
+}
+
+# Profile Badges for PP Store
+PROFILE_BADGES = {
+    "badge_veteran": {
+        "name": "Veteran Badge",
+        "description": "Shows you've been playing since the early days",
+        "pp_cost": 100,
+        "icon": "🎖️",
+        "rarity": "common",
+    },
+    "badge_whale": {
+        "name": "Whale Badge",
+        "description": "Earned by depositing over R50,000 total",
+        "pp_cost": 200,
+        "icon": "🐋",
+        "rarity": "rare",
+        "unlock_requirement": {"type": "total_deposit", "value": 50000},
+    },
+    "badge_lucky": {
+        "name": "Lucky Charm Badge",
+        "description": "Awarded for hitting a 50x+ multiplier",
+        "pp_cost": 150,
+        "icon": "🍀",
+        "rarity": "epic",
+        "unlock_requirement": {"type": "multiplier", "value": 50},
+    },
+    "badge_streak": {
+        "name": "Streak Master Badge",
+        "description": "Unlocked for a 25-win streak",
+        "pp_cost": 175,
+        "icon": "🔥",
+        "rarity": "epic",
+        "unlock_requirement": {"type": "win_streak", "value": 25},
+    },
+    "badge_top10": {
+        "name": "Elite Top 10 Badge",
+        "description": "Exclusive badge for reaching Top 10",
+        "pp_cost": 300,
+        "icon": "👑",
+        "rarity": "legendary",
+        "unlock_requirement": {"type": "leaderboard_rank", "value": 10},
+    },
+    "badge_global1": {
+        "name": "Champion Badge",
+        "description": "Awarded for reaching #1 globally",
+        "pp_cost": 500,
+        "icon": "🏆",
+        "rarity": "mythic",
+        "unlock_requirement": {"type": "global_rank", "value": 1},
+    },
+    "badge_collector": {
+        "name": "Theme Collector Badge",
+        "description": "Own 5 or more themes",
+        "pp_cost": 125,
+        "icon": "🎨",
+        "rarity": "rare",
+        "unlock_requirement": {"type": "themes_owned", "value": 5},
+    },
+    "badge_night_owl": {
+        "name": "Night Owl Badge",
+        "description": "Play during late hours",
+        "pp_cost": 75,
+        "icon": "🦉",
+        "rarity": "common",
     },
 }
 
@@ -93,75 +160,202 @@ STORE_ITEMS = {
         },
     ],
     "cosmetic_themes": [
-        {"id": "cyber_neon", "name": "Cyber Neon", "pp_cost": 300, "sacrifice": 5000, "rarity": "legendary"},
-        {"id": "crystal_ice", "name": "Crystal Ice", "pp_cost": 250, "sacrifice": 3000, "rarity": "epic"},
-        {"id": "phoenix_fire", "name": "Phoenix Fire", "pp_cost": 350, "sacrifice": 7000, "rarity": "legendary"},
-        {"id": "void_shadow", "name": "Void Shadow", "pp_cost": 400, "sacrifice": 10000, "rarity": "mythic"},
-        {"id": "galaxy_dust", "name": "Galaxy Dust", "pp_cost": 200, "sacrifice": 2000, "rarity": "rare"},
-        {"id": "golden_age", "name": "Golden Age", "pp_cost": 500, "sacrifice": 15000, "rarity": "mythic"},
+        # Retro/Synth Themes
+        {"id": "synthwave", "name": "Synthwave", "pp_cost": 300, "sacrifice": 5000, "rarity": "epic", "category": "Retro/Synth"},
+        {"id": "synthwave90s", "name": "Synthwave 90s", "pp_cost": 350, "sacrifice": 7000, "rarity": "epic", "category": "Retro/Synth"},
+        # Developer Favorites
+        {"id": "gruvbox", "name": "Gruvbox", "pp_cost": 200, "sacrifice": 3000, "rarity": "rare", "category": "Developer"},
+        {"id": "tokyo-night", "name": "Tokyo Night", "pp_cost": 250, "sacrifice": 4000, "rarity": "rare", "category": "Developer"},
+        {"id": "catppuccin-frappe", "name": "Catppuccin Frappé", "pp_cost": 200, "sacrifice": 3000, "rarity": "rare", "category": "Developer"},
+        {"id": "catppuccin-latte", "name": "Catppuccin Latte", "pp_cost": 200, "sacrifice": 3000, "rarity": "rare", "category": "Developer"},
+        # Clean/Modern Themes
+        {"id": "off-white", "name": "Off-White", "pp_cost": 150, "sacrifice": 2000, "rarity": "common", "category": "Clean/Modern"},
+        {"id": "oneui", "name": "One UI", "pp_cost": 175, "sacrifice": 2500, "rarity": "common", "category": "Clean/Modern"},
+        {"id": "apple-glass", "name": "Apple Glass", "pp_cost": 250, "sacrifice": 4000, "rarity": "epic", "category": "Clean/Modern"},
+        # Legacy Themes
+        {"id": "cyber_neon", "name": "Cyber Neon", "pp_cost": 300, "sacrifice": 5000, "rarity": "legendary", "category": "Legacy"},
+        {"id": "crystal_ice", "name": "Crystal Ice", "pp_cost": 250, "sacrifice": 3000, "rarity": "epic", "category": "Legacy"},
+        {"id": "phoenix_fire", "name": "Phoenix Fire", "pp_cost": 350, "sacrifice": 7000, "rarity": "legendary", "category": "Legacy"},
+        {"id": "void_shadow", "name": "Void Shadow", "pp_cost": 400, "sacrifice": 10000, "rarity": "mythic", "category": "Legacy"},
+        {"id": "galaxy_dust", "name": "Galaxy Dust", "pp_cost": 200, "sacrifice": 2000, "rarity": "rare", "category": "Legacy"},
+        {"id": "golden_age", "name": "Golden Age", "pp_cost": 500, "sacrifice": 15000, "rarity": "mythic", "category": "Legacy"},
+    ],
+    "badges": [
+        {"id": "badge_veteran", "name": "Veteran Badge", "pp_cost": 100, "sacrifice": 0, "rarity": "common", "icon": "🎖️"},
+        {"id": "badge_whale", "name": "Whale Badge", "pp_cost": 200, "sacrifice": 0, "rarity": "rare", "icon": "🐋"},
+        {"id": "badge_lucky", "name": "Lucky Charm Badge", "pp_cost": 150, "sacrifice": 0, "rarity": "epic", "icon": "🍀"},
+        {"id": "badge_streak", "name": "Streak Master Badge", "pp_cost": 175, "sacrifice": 0, "rarity": "epic", "icon": "🔥"},
+        {"id": "badge_top10", "name": "Elite Top 10 Badge", "pp_cost": 300, "sacrifice": 0, "rarity": "legendary", "icon": "👑"},
+        {"id": "badge_global1", "name": "Champion Badge", "pp_cost": 500, "sacrifice": 0, "rarity": "mythic", "icon": "🏆"},
+        {"id": "badge_collector", "name": "Theme Collector Badge", "pp_cost": 125, "sacrifice": 0, "rarity": "rare", "icon": "🎨"},
+        {"id": "badge_night_owl", "name": "Night Owl Badge", "pp_cost": 75, "sacrifice": 0, "rarity": "common", "icon": "🦉"},
     ],
 }
 
-# 200+ Achievement Definitions
+# 500+ Achievement Definitions
 ACHIEVEMENTS = {
-    # Milestone Wins (1-1000)
+    # =============================================
+    # 1. THE SPIN CYCLE (100 levels)
+    # Criteria: total_games >= level * 500
+    # =============================================
+    **{f"spin_cycle_{level}": {
+        "name": f"Spin Init {level}",
+        "description": f"Complete {level * 500:,} total spins",
+        "category": "spin_cycle",
+        "requirement": {"type": "total_games", "value": level * 500},
+        "rarity": "bronze" if level <= 20 else "silver" if level <= 40 else "gold" if level <= 60 else "platinum" if level <= 80 else "diamond",
+        "shape": "hexagon" if level % 5 == 0 else "circle" if level % 3 == 0 else "star",
+        "icon": "🎰",
+    } for level in range(1, 101)},
+    
+    # =============================================
+    # 2. MULTIPLIER MADNESS (100 levels)
+    # Criteria: max_multiplier >= (level * 0.5) + 1.5
+    # =============================================
+    **{f"multiplier_madness_{level}": {
+        "name": f"Luck Factor {level}",
+        "description": f"Achieve a {(level * 0.5) + 1.5:.1f}x multiplier",
+        "category": "multiplier",
+        "requirement": {"type": "max_multiplier", "value": (level * 0.5) + 1.5},
+        "rarity": "bronze" if level <= 20 else "silver" if level <= 40 else "gold" if level <= 60 else "platinum" if level <= 80 else "mythic",
+        "shape": "star" if level % 10 == 0 else "diamond" if level % 5 == 0 else "hexagon",
+        "icon": "⚡",
+    } for level in range(1, 101)},
+    
+    # =============================================
+    # 3. BALANCE BOSS (100 levels)
+    # Criteria: max_balance >= level * 1000
+    # =============================================
+    **{f"balance_boss_{level}": {
+        "name": f"Wealth Tier {level}",
+        "description": f"Hold R{level * 1000:,} in balance",
+        "category": "balance",
+        "requirement": {"type": "max_balance", "value": level * 1000},
+        "rarity": "bronze" if level <= 25 else "silver" if level <= 50 else "gold" if level <= 75 else "platinum" if level <= 90 else "diamond",
+        "shape": "shield" if level % 10 == 0 else "hexagon" if level % 5 == 0 else "circle",
+        "icon": "💰",
+    } for level in range(1, 101)},
+    
+    # =============================================
+    # 4. THE BIG SPENDER (100 levels)
+    # Criteria: total_pp_spent >= level * 250
+    # =============================================
+    **{f"big_spender_{level}": {
+        "name": f"PP Investor {level}",
+        "description": f"Spend {level * 250:,} PP in the store",
+        "category": "spending",
+        "requirement": {"type": "total_pp_spent", "value": level * 250},
+        "rarity": "bronze" if level <= 25 else "silver" if level <= 50 else "gold" if level <= 75 else "platinum" if level <= 90 else "legendary",
+        "shape": "star" if level % 25 == 0 else "circle" if level % 10 == 0 else "diamond",
+        "icon": "🛒",
+    } for level in range(1, 101)},
+    
+    # =============================================
+    # 5. THEME MASTER (50 levels)
+    # Criteria: theme_switches >= level * 5 (5, 10, 15... 250)
+    # =============================================
+    **{f"theme_master_{level}": {
+        "name": f"Theme Dancer {level}",
+        "description": f"Switch themes {level * 5} times",
+        "category": "themes",
+        "requirement": {"type": "theme_switches", "value": level * 5},
+        "rarity": "common" if level <= 10 else "rare" if level <= 25 else "epic" if level <= 40 else "legendary",
+        "shape": "hexagon" if level % 5 == 0 else "circle",
+        "icon": "🎨",
+    } for level in range(1, 51)},
+    
+    # =============================================
+    # 6. THE SA SPECIAL (50 levels)
+    # Specific winning amounts for SA players
+    # =============================================
+    # R200 milestones
+    **{f"sa_win_200_{level}": {
+        "name": f"R200 Winner {level}",
+        "description": f"Win exactly R200 in {level} different spins",
+        "category": "sa_special",
+        "requirement": {"type": "exact_win_count", "value": 200, "count": level},
+        "rarity": "bronze",
+        "shape": "circle",
+        "icon": "🇿🇦",
+    } for level in [1, 5, 10, 25, 50]},
+    # R500 milestones
+    **{f"sa_win_500_{level}": {
+        "name": f"R500 Winner {level}",
+        "description": f"Win exactly R500 in {level} different spins",
+        "category": "sa_special",
+        "requirement": {"type": "exact_win_count", "value": 500, "count": level},
+        "rarity": "silver",
+        "shape": "diamond",
+        "icon": "🇿🇦",
+    } for level in [1, 5, 10, 25]},
+    # R1000 milestones
+    **{f"sa_win_1000_{level}": {
+        "name": f"R1K Winner {level}",
+        "description": f"Win exactly R1,000 in {level} different spins",
+        "category": "sa_special",
+        "requirement": {"type": "exact_win_count", "value": 1000, "count": level},
+        "rarity": "gold",
+        "shape": "star",
+        "icon": "🇿🇦",
+    } for level in [1, 5, 10, 25]},
+    # R2000 milestones
+    **{f"sa_win_2000_{level}": {
+        "name": f"R2K Winner {level}",
+        "description": f"Win exactly R2,000 in {level} different spins",
+        "category": "sa_special",
+        "requirement": {"type": "exact_win_count", "value": 2000, "count": level},
+        "rarity": "platinum",
+        "shape": "crown",
+        "icon": "🇿🇦",
+    } for level in [1, 5, 10]},
+    # R5000 milestones
+    **{f"sa_win_5000_{level}": {
+        "name": f"R5K Legend {level}",
+        "description": f"Win exactly R5,000 in {level} different spins",
+        "category": "sa_special",
+        "requirement": {"type": "exact_win_count", "value": 5000, "count": level},
+        "rarity": "mythic",
+        "shape": "crown",
+        "icon": "👑",
+    } for level in [1, 5, 10]},
+    # Single spin SA wins
+    **{f"sa_single_200": {"name": "R200 Single Spin", "description": "Win exactly R200 in a single spin", "category": "sa_special", "requirement": {"type": "single_spin_win", "value": 200}, "rarity": "bronze", "shape": "circle", "icon": "💵"}},
+    **{f"sa_single_500": {"name": "R500 Single Spin", "description": "Win exactly R500 in a single spin", "category": "sa_special", "requirement": {"type": "single_spin_win", "value": 500}, "rarity": "silver", "shape": "diamond", "icon": "💵"}},
+    **{f"sa_single_1000": {"name": "R1K Single Spin", "description": "Win exactly R1,000 in a single spin", "category": "sa_special", "requirement": {"type": "single_spin_win", "value": 1000}, "rarity": "gold", "shape": "star", "icon": "💵"}},
+    **{f"sa_single_2000": {"name": "R2K Single Spin", "description": "Win exactly R2,000 in a single spin", "category": "sa_special", "requirement": {"type": "single_spin_win", "value": 2000}, "rarity": "platinum", "shape": "star", "icon": "💵"}},
+    **{f"sa_single_5000": {"name": "R5K Single Spin", "description": "Win exactly R5,000 in a single spin", "category": "sa_special", "requirement": {"type": "single_spin_win", "value": 5000}, "rarity": "mythic", "shape": "crown", "icon": "👑"}},
+    
+    # =============================================
+    # LEGACY ACHIEVEMENTS (kept for compatibility)
+    # =============================================
+    # Milestone Wins
     **{f"wins_{n}": {"name": f"{n}-Win Club", "description": f"Won {n} spins", "category": "milestone", "requirement": {"type": "wins", "value": n}, "rarity": "bronze" if n <= 10 else "silver" if n <= 50 else "gold" if n <= 100 else "platinum" if n <= 500 else "diamond", "shape": "hexagon" if n % 3 == 0 else "shield" if n % 3 == 1 else "star"} for n in [1, 5, 10, 25, 50, 100, 200, 500, 1000]},
-    # Game Play Milestones
-    **{f"games_{n}": {"name": f"{n}-Game Veteran", "description": f"Played {n} games", "category": "milestone", "requirement": {"type": "games", "value": n}, "rarity": "bronze" if n <= 50 else "silver" if n <= 200 else "gold", "shape": "circle" if n % 2 == 0 else "diamond"} for n in [10, 25, 50, 100, 250, 500, 1000]},
-    # Difficulty-Specific Achievements
-    "hard_survivor": {"name": "Hard Mode Survivor", "description": "Completed 50 spins in Hard mode", "category": "difficulty", "requirement": {"type": "difficulty_games", "value": "hard", "games": 50}, "rarity": "gold", "shape": "hexagon"},
-    "hard_elite": {"name": "Hard Mode Elite", "description": "Completed 200 spins in Hard mode", "category": "difficulty", "requirement": {"type": "difficulty_games", "value": "hard", "games": 200}, "rarity": "platinum", "shape": "star"},
-    "hard_legend": {"name": "Hard Mode Legend", "description": "Completed 500 spins in Hard mode", "category": "difficulty", "requirement": {"type": "difficulty_games", "value": "hard", "games": 500}, "rarity": "diamond", "shape": "crown"},
-    "medium_master": {"name": "Medium Mode Master", "description": "Reached R25,000 cap in Medium mode", "category": "difficulty", "requirement": {"type": "medium_cap", "value": 25000}, "rarity": "gold", "shape": "shield"},
-    "easy_tycoon": {"name": "Easy Street Tycoon", "description": "Reached R50,000 cap in Easy mode", "category": "difficulty", "requirement": {"type": "easy_cap", "value": 50000}, "rarity": "platinum", "shape": "star"},
-    # Wealth Achievements (Total Deposit)
-    **{f"wealth_{n}": {"name": f"R{n:,} Club", "description": f"Accumulated R{n:,} in total deposits", "category": "wealth", "requirement": {"type": "total_deposit", "value": n}, "rarity": "bronze" if n <= 1000 else "silver" if n <= 10000 else "gold" if n <= 50000 else "platinum", "shape": "hexagon"} for n in [500, 1000, 5000, 10000, 25000, 50000, 75000, 100000]},
-    # A-Value Streak Achievements
-    "first_a": {"name": "First A-Value", "description": "Hit your first A-value symbol", "category": "rarity", "requirement": {"type": "a_hits", "value": 1}, "rarity": "bronze", "shape": "hexagon"},
-    "a_triple": {"name": "Triple A-Value", "description": "Hit 3 consecutive A-values in a single spin", "category": "rarity", "requirement": {"type": "a_streak_single", "value": 3}, "rarity": "gold", "shape": "star"},
-    **{f"a_hits_{n}": {"name": f"{n}x A-Hitter", "description": f"Hit A-value symbols {n} times", "category": "rarity", "requirement": {"type": "a_hits", "value": n}, "rarity": "silver" if n <= 10 else "gold" if n <= 50 else "platinum", "shape": "hexagon"} for n in [5, 10, 25, 50, 100]},
-    **{f"a_streak_{n}": {"name": f"{n}-Spin A-Streak", "description": f"Hit A-values for {n} consecutive spins", "category": "rarity", "requirement": {"type": "a_streak", "value": n}, "rarity": "platinum" if n >= 5 else "diamond", "shape": "star"} for n in [3, 5, 10]},
-    # Win Streak Achievements
-    **{f"streak_{n}": {"name": f"{n}-Win Streak", "description": f"Won {n} spins in a row", "category": "milestone", "requirement": {"type": "win_streak", "value": n}, "rarity": "bronze" if n <= 5 else "silver" if n <= 10 else "gold", "shape": "shield"} for n in [3, 5, 10, 25, 50]},
-    # Hit Rate Achievements
-    "lucky_30": {"name": "Lucky 30%", "description": "Achieved a 30% hit rate over 50 games", "category": "rarity", "requirement": {"type": "hit_rate", "value": 0.30, "games": 50}, "rarity": "silver", "shape": "circle"},
-    "lucky_50": {"name": "Lucky 50%", "description": "Achieved a 50% hit rate over 100 games", "category": "rarity", "requirement": {"type": "hit_rate", "value": 0.50, "games": 100}, "rarity": "gold", "shape": "star"},
-    "lucky_70": {"name": "Lucky 70%", "description": "Achieved a 70% hit rate over 200 games", "category": "rarity", "requirement": {"type": "hit_rate", "value": 0.70, "games": 200}, "rarity": "platinum", "shape": "crown"},
-    # Balance Achievements
-    **{f"balance_{n}": {"name": f"Balance R{n:,}", "description": f"Had R{n:,} in balance at once", "category": "wealth", "requirement": {"type": "max_balance", "value": n}, "rarity": "silver" if n <= 5000 else "gold" if n <= 25000 else "platinum", "shape": "hexagon"} for n in [1000, 5000, 10000, 25000, 50000]},
-    # Leaderboard Achievements
-    "top_25": {"name": "Top 25", "description": "Reached rank 25 on any leaderboard", "category": "difficulty", "requirement": {"type": "leaderboard_rank", "value": 25}, "rarity": "silver", "shape": "shield"},
-    "top_10": {"name": "Top 10 Elite", "description": "Reached rank 10 on any leaderboard", "category": "difficulty", "requirement": {"type": "leaderboard_rank", "value": 10}, "rarity": "gold", "shape": "star"},
-    "top_5": {"name": "Top 5 Master", "description": "Reached rank 5 on any leaderboard", "category": "difficulty", "requirement": {"type": "leaderboard_rank", "value": 5}, "rarity": "platinum", "shape": "crown"},
-    "global_1": {"name": "Global Champion", "description": "Reached rank 1 on the Global leaderboard", "category": "difficulty", "requirement": {"type": "global_rank", "value": 1}, "rarity": "diamond", "shape": "crown", "animation": "rainbow"},
-    # Deposit Achievements
-    **{f"deposits_{n}": {"name": f"{n} Deposits", "description": f"Made {n} deposit transactions", "category": "milestone", "requirement": {"type": "deposits", "value": n}, "rarity": "bronze", "shape": "circle"} for n in [5, 10, 25, 50, 100]},
-    # Double A-Value Hit (rare event)
-    "double_a_hit": {"name": "Double A-Value Hit", "description": "Got A-values on two lines in one spin", "category": "rarity", "requirement": {"type": "double_a_line", "value": 1}, "rarity": "platinum", "shape": "star", "animation": "pulse"},
-    # Deposit Tier Achievements
-    **{f"deposit_tier_{tier}": {"name": f"{tier.title()} Tier Depositor", "description": f"Deposited in the {tier} deposit tier", "category": "wealth", "requirement": {"type": "deposit_tier", "value": tier}, "rarity": "silver", "shape": "hexagon"} for tier in ["bronze", "silver", "gold", "platinum", "diamond", "radiant"]},
-    # Consecutive Loss Recovery
-    "comeback_kid": {"name": "Comeback Kid", "description": "Recovered from 0 balance to R1,000+", "category": "milestone", "requirement": {"type": "comeback", "value": 1000}, "rarity": "gold", "shape": "shield"},
-    # PP Earned Achievements
-    **{f"pp_earned_{n}": {"name": f"{n} PP Earned", "description": f"Earned {n} total Prestige Points", "category": "wealth", "requirement": {"type": "pp_earned", "value": n}, "rarity": "bronze" if n <= 100 else "silver" if n <= 500 else "gold" if n <= 2000 else "platinum", "shape": "hexagon"} for n in [50, 100, 250, 500, 1000, 2500, 5000]},
-    # Store Purchases
-    **{f"store_purchases_{n}": {"name": f"Shopper Lv.{n}", "description": f"Made {n} store purchases", "category": "milestone", "requirement": {"type": "store_purchases", "value": n}, "rarity": "bronze" if n <= 3 else "silver", "shape": "circle"} for n in [1, 3, 5, 10, 25]},
-    # Streak Multiplier Achievements (Medium mode)
-    "medium_10x": {"name": "10x Medium Streak", "description": "Achieved a 10x win streak multiplier in Medium mode", "category": "difficulty", "requirement": {"type": "medium_streak_mult", "value": 10}, "rarity": "gold", "shape": "star"},
-    # Pity Breaker
-    "pity_breaker": {"name": "Pity Breaker", "description": "Hit an A-value after the pity threshold in Medium mode", "category": "difficulty", "requirement": {"type": "pity_break"}, "rarity": "silver", "shape": "hexagon"},
-    # First Time Achievements
-    "first_spin": {"name": "First Spin", "description": "Completed your first spin", "category": "milestone", "requirement": {"type": "games", "value": 1}, "rarity": "bronze", "shape": "circle"},
-    "first_win": {"name": "First Win", "description": "Won your first spin", "category": "milestone", "requirement": {"type": "wins", "value": 1}, "rarity": "bronze", "shape": "circle"},
-    "first_deposit": {"name": "First Deposit", "description": "Made your first deposit", "category": "milestone", "requirement": {"type": "deposits", "value": 1}, "rarity": "bronze", "shape": "circle"},
-    "first_rank": {"name": "Ranked Player", "description": "Entered any leaderboard for the first time", "category": "milestone", "requirement": {"type": "leaderboard_enter"}, "rarity": "bronze", "shape": "shield"},
-    # Long Haul (time-based)
-    "week_warrior": {"name": "Week Warrior", "description": "Kept account active for 7 days", "category": "milestone", "requirement": {"type": "account_days", "value": 7}, "rarity": "silver", "shape": "circle"},
-    "monthly_master": {"name": "Monthly Master", "description": "Kept account active for 30 days", "category": "milestone", "requirement": {"type": "account_days", "value": 30}, "rarity": "gold", "shape": "star"},
-    # Efficiency Achievements
-    "big_win_small_bet": {"name": "Big Win, Small Bet", "description": "Won 100x your bet in a single spin", "category": "rarity", "requirement": {"type": "win_to_bet_ratio", "value": 100}, "rarity": "platinum", "shape": "star", "animation": "neon"},
-    # Bankruptcy Survivor (Hard mode)
-    "bankruptcy_survivor": {"name": "Bankruptcy Survivor", "description": "Recovered from bankruptcy in Hard mode", "category": "difficulty", "requirement": {"type": "bankruptcy_recovery"}, "rarity": "gold", "shape": "shield"},
+    # Difficulty-Specific
+    "hard_survivor": {"name": "Hard Mode Survivor", "description": "Completed 50 spins in Hard mode", "category": "difficulty", "requirement": {"type": "difficulty_games", "value": "hard", "games": 50}, "rarity": "gold", "shape": "hexagon", "icon": "⚔️"},
+    "hard_elite": {"name": "Hard Mode Elite", "description": "Completed 200 spins in Hard mode", "category": "difficulty", "requirement": {"type": "difficulty_games", "value": "hard", "games": 200}, "rarity": "platinum", "shape": "star", "icon": "🏆"},
+    "hard_legend": {"name": "Hard Mode Legend", "description": "Completed 500 spins in Hard mode", "category": "difficulty", "requirement": {"type": "difficulty_games", "value": "hard", "games": 500}, "rarity": "diamond", "shape": "crown", "icon": "👑"},
+    "medium_master": {"name": "Medium Mode Master", "description": "Reached R25,000 cap in Medium mode", "category": "difficulty", "requirement": {"type": "medium_cap", "value": 25000}, "rarity": "gold", "shape": "shield", "icon": "🛡️"},
+    "easy_tycoon": {"name": "Easy Street Tycoon", "description": "Reached R50,000 cap in Easy mode", "category": "difficulty", "requirement": {"type": "easy_cap", "value": 50000}, "rarity": "platinum", "shape": "star", "icon": "💎"},
+    # A-Value Achievements
+    "first_a": {"name": "First A-Value", "description": "Hit your first A-value symbol", "category": "rarity", "requirement": {"type": "a_hits", "value": 1}, "rarity": "bronze", "shape": "hexagon", "icon": "🅰️"},
+    "a_triple": {"name": "Triple A-Value", "description": "Hit 3 consecutive A-values in a single spin", "category": "rarity", "requirement": {"type": "a_streak_single", "value": 3}, "rarity": "gold", "shape": "star", "icon": "🅰️"},
+    **{f"a_hits_{n}": {"name": f"{n}x A-Hitter", "description": f"Hit A-value symbols {n} times", "category": "rarity", "requirement": {"type": "a_hits", "value": n}, "rarity": "silver" if n <= 10 else "gold" if n <= 50 else "platinum", "shape": "hexagon", "icon": "🅰️"} for n in [5, 10, 25, 50, 100]},
+    **{f"a_streak_{n}": {"name": f"{n}-Spin A-Streak", "description": f"Hit A-values for {n} consecutive spins", "category": "rarity", "requirement": {"type": "a_streak", "value": n}, "rarity": "platinum" if n >= 5 else "diamond", "shape": "star", "icon": "🔥"} for n in [3, 5, 10]},
+    # Win Streaks
+    **{f"streak_{n}": {"name": f"{n}-Win Streak", "description": f"Won {n} spins in a row", "category": "milestone", "requirement": {"type": "win_streak", "value": n}, "rarity": "bronze" if n <= 5 else "silver" if n <= 10 else "gold", "shape": "shield", "icon": "🔥"} for n in [3, 5, 10, 25, 50]},
+    # Leaderboard
+    "top_25": {"name": "Top 25", "description": "Reached rank 25 on any leaderboard", "category": "difficulty", "requirement": {"type": "leaderboard_rank", "value": 25}, "rarity": "silver", "shape": "shield", "icon": "🏅"},
+    "top_10": {"name": "Top 10 Elite", "description": "Reached rank 10 on any leaderboard", "category": "difficulty", "requirement": {"type": "leaderboard_rank", "value": 10}, "rarity": "gold", "shape": "star", "icon": "🥇"},
+    "top_5": {"name": "Top 5 Master", "description": "Reached rank 5 on any leaderboard", "category": "difficulty", "requirement": {"type": "leaderboard_rank", "value": 5}, "rarity": "platinum", "shape": "crown", "icon": "🥈"},
+    "global_1": {"name": "Global Champion", "description": "Reached rank 1 on the Global leaderboard", "category": "difficulty", "requirement": {"type": "global_rank", "value": 1}, "rarity": "diamond", "shape": "crown", "icon": "🏆", "animation": "rainbow"},
+    # First Times
+    "first_spin": {"name": "First Spin", "description": "Completed your first spin", "category": "milestone", "requirement": {"type": "games", "value": 1}, "rarity": "bronze", "shape": "circle", "icon": "🎲"},
+    "first_win": {"name": "First Win", "description": "Won your first spin", "category": "milestone", "requirement": {"type": "wins", "value": 1}, "rarity": "bronze", "shape": "circle", "icon": "🎉"},
+    "first_deposit": {"name": "First Deposit", "description": "Made your first deposit", "category": "milestone", "requirement": {"type": "deposits", "value": 1}, "rarity": "bronze", "shape": "circle", "icon": "💳"},
+    # Efficiency
+    "big_win_small_bet": {"name": "Big Win, Small Bet", "description": "Won 100x your bet in a single spin", "category": "rarity", "requirement": {"type": "win_to_bet_ratio", "value": 100}, "rarity": "platinum", "shape": "star", "icon": "💫", "animation": "neon"},
+    # Bankruptcy
+    "bankruptcy_survivor": {"name": "Bankruptcy Survivor", "description": "Recovered from bankruptcy in Hard mode", "category": "difficulty", "requirement": {"type": "bankruptcy_recovery"}, "rarity": "gold", "shape": "shield", "icon": "💪"},
 }
 
 SYMBOL_VALUE = {
@@ -459,13 +653,19 @@ class SlotStore:
                     "custom_banner_path": "TEXT NOT NULL DEFAULT ''",
                     "prestige_points": "REAL NOT NULL DEFAULT 0",
                     "total_pp_earned": "REAL NOT NULL DEFAULT 0",
+                    "total_pp_spent": "REAL NOT NULL DEFAULT 0",
                     "unlocked_assets": "TEXT NOT NULL DEFAULT '[]'",
                     "inventory": "TEXT NOT NULL DEFAULT '{}'",
                     "total_deposits_count": "INTEGER NOT NULL DEFAULT 0",
                     "max_balance": "REAL NOT NULL DEFAULT 0",
                     "total_a_hits": "INTEGER NOT NULL DEFAULT 0",
                     "max_win_streak": "INTEGER NOT NULL DEFAULT 0",
+                    "max_multiplier": "REAL NOT NULL DEFAULT 0",
+                    "theme_switches": "INTEGER NOT NULL DEFAULT 0",
+                    "single_spin_wins": "TEXT NOT NULL DEFAULT '{}'",
                     "store_purchases": "INTEGER NOT NULL DEFAULT 0",
+                    "selected_badge": "TEXT NOT NULL DEFAULT ''",
+                    "selected_theme": "TEXT NOT NULL DEFAULT ''",
                 },
             )
             self._ensure_table_columns(
@@ -695,6 +895,22 @@ class SlotStore:
             badges.append({"name": "A-Streak", "description": "Triggered the consecutive A banner event.", "tone": "gold"})
         return badges
 
+    def _store_badges(self, row):
+        """Get purchasable store badges that the user owns."""
+        inventory = json.loads(row.get("inventory") or "{}")
+        owned_badges = inventory.get("badges", [])
+        store_badges = []
+        for badge in STORE_ITEMS.get("badges", []):
+            store_badges.append({
+                "id": badge["id"],
+                "name": badge["name"],
+                "description": badge.get("description", ""),
+                "icon": badge.get("icon", "🏅"),
+                "rarity": badge.get("rarity", "common"),
+                "owned": badge["id"] in owned_badges,
+            })
+        return store_badges
+
     def _save_data_url_image(self, user_id, prefix, data_url):
         if not data_url:
             return ""
@@ -728,6 +944,8 @@ class SlotStore:
                 "selectedSkin": effective["selectedSkin"],
                 "selectedBanner": effective["selectedBanner"],
                 "selectedAvatar": effective["selectedAvatar"],
+                "selectedBadge": row.get("selected_badge", ""),
+                "selectedTheme": row.get("selected_theme", ""),
                 "avatarPath": row["custom_avatar_path"],
                 "bannerPath": row["custom_banner_path"],
                 "initials": initials_from_name(profile_name),
@@ -752,6 +970,7 @@ class SlotStore:
                 "isTopTen": is_top_ten,
             },
             "badges": self._badges(row, global_rank, mode_rank),
+            "storeBadges": self._store_badges(row),
             "cosmetics": cosmetics,
             "achievements": self._get_achievements(row, global_rank, mode_rank),
         }
@@ -827,6 +1046,32 @@ class SlotStore:
             return row["difficulty_mode"] == "medium" and row["win_streak"] >= req.get("value", 0)
         elif req_type == "bankruptcy_recovery":
             return row["total_games"] > 0 and row["balance"] > 0  # Simplified
+        # =============================================
+        # NEW 500+ ACHIEVEMENT TYPES
+        # =============================================
+        elif req_type == "total_games":
+            # Spin Cycle achievements
+            return row.get("total_games", 0) >= req.get("value", 0)
+        elif req_type == "max_multiplier":
+            # Multiplier Madness achievements
+            return row.get("max_multiplier", 0) >= req.get("value", 0)
+        elif req_type == "total_pp_spent":
+            # Big Spender achievements
+            return row.get("total_pp_spent", 0) >= req.get("value", 0)
+        elif req_type == "theme_switches":
+            # Theme Master achievements
+            return row.get("theme_switches", 0) >= req.get("value", 0)
+        elif req_type == "exact_win_count":
+            # SA Special achievements - count of exact win amounts
+            single_spin_wins = json.loads(row.get("single_spin_wins") or "{}")
+            win_amount = str(req.get("value", 0))
+            count_needed = req.get("count", 1)
+            return single_spin_wins.get(win_amount, 0) >= count_needed
+        elif req_type == "single_spin_win":
+            # SA Special achievements - any single spin win of exact amount
+            single_spin_wins = json.loads(row.get("single_spin_wins") or "{}")
+            win_amount = str(req.get("value", 0))
+            return win_amount in single_spin_wins
         return False
 
     def _get_achievements(self, row, global_rank, mode_rank):
@@ -898,7 +1143,7 @@ class SlotStore:
     def get_store_items(self):
         """Get all store items with prices."""
         inventory = {}
-        # Format boosters and cosmetics for the store
+        # Format boosters, cosmetics, and badges for the store
         all_items = []
         for item in STORE_ITEMS["boosters"]:
             all_items.append({
@@ -908,6 +1153,11 @@ class SlotStore:
         for item in STORE_ITEMS["cosmetic_themes"]:
             all_items.append({
                 "type": "theme",
+                **item,
+            })
+        for item in STORE_ITEMS.get("badges", []):
+            all_items.append({
+                "type": "badge",
                 **item,
             })
         return all_items
@@ -926,6 +1176,11 @@ class SlotStore:
                 if i["id"] == item_id:
                     item = i
                     break
+        elif item_type == "badge":
+            for i in STORE_ITEMS.get("badges", []):
+                if i["id"] == item_id:
+                    item = i
+                    break
         
         if not item:
             raise ValueError("Item not found in store.")
@@ -938,6 +1193,17 @@ class SlotStore:
             # Check PP balance
             if row["prestige_points"] < item["pp_cost"]:
                 raise ValueError(f"Insufficient Prestige Points. You need {item['pp_cost']} PP but have {row['prestige_points']:.2f} PP.")
+            
+            # Check if already owned (for themes and badges)
+            inventory = json.loads(row["inventory"] or "{}")
+            if item_type == "theme":
+                owned_themes = inventory.get("themes", [])
+                if item_id in owned_themes:
+                    raise ValueError("You already own this theme.")
+            elif item_type == "badge":
+                owned_badges = inventory.get("badges", [])
+                if item_id in owned_badges:
+                    raise ValueError("You already own this badge.")
             
             # Apply sacrifice (permanent deduction from max_deposit_limit)
             sacrifice = item.get("sacrifice", 0)
@@ -956,6 +1222,11 @@ class SlotStore:
                         inventory["themes"] = []
                     if item["id"] not in inventory["themes"]:
                         inventory["themes"].append(item["id"])
+                elif item_type == "badge":
+                    if "badges" not in inventory:
+                        inventory["badges"] = []
+                    if item["id"] not in inventory["badges"]:
+                        inventory["badges"].append(item["id"])
                 
                 self.conn.execute(
                     """
@@ -963,10 +1234,11 @@ class SlotStore:
                     SET prestige_points = prestige_points - %s,
                         max_deposit_limit = %s,
                         inventory = %s,
-                        store_purchases = store_purchases + 1
+                        store_purchases = store_purchases + 1,
+                        total_pp_spent = total_pp_spent + %s
                     WHERE id = %s
                     """,
-                    (item["pp_cost"], new_limit, json.dumps(inventory), user_id),
+                    (item["pp_cost"], new_limit, json.dumps(inventory), item["pp_cost"], user_id),
                 )
             else:
                 # No sacrifice needed (e.g., starting balance or no limit yet)
@@ -982,16 +1254,22 @@ class SlotStore:
                         inventory["themes"] = []
                     if item["id"] not in inventory["themes"]:
                         inventory["themes"].append(item["id"])
+                elif item_type == "badge":
+                    if "badges" not in inventory:
+                        inventory["badges"] = []
+                    if item["id"] not in inventory["badges"]:
+                        inventory["badges"].append(item["id"])
                 
                 self.conn.execute(
                     """
                     UPDATE users
                     SET prestige_points = prestige_points - %s,
                         inventory = %s,
-                        store_purchases = store_purchases + 1
+                        store_purchases = store_purchases + 1,
+                        total_pp_spent = total_pp_spent + %s
                     WHERE id = %s
                     """,
-                    (item["pp_cost"], json.dumps(inventory), user_id),
+                    (item["pp_cost"], json.dumps(inventory), item["pp_cost"], user_id),
                 )
             
             updated = self._user_row(user_id)
@@ -1277,6 +1555,16 @@ class SlotStore:
             a_count = sum(1 for col in columns for sym in col if sym == "A")
             total_a_hits += a_count
 
+            # Calculate multiplier for achievements
+            multiplier = (winnings / total_bet) if total_bet > 0 else 0
+            max_multiplier = max(row.get("max_multiplier") or 0, multiplier)
+            
+            # Track exact win amounts for SA Special achievements
+            single_spin_wins = json.loads(row.get("single_spin_wins") or "{}")
+            if winnings > 0:
+                win_key = str(int(winnings))
+                single_spin_wins[win_key] = single_spin_wins.get(win_key, 0) + 1
+
             if difficulty == "hard":
                 max_deposit_limit = MODE_CONFIG["hard"]["cap"]
                 next_denominator = MODE_CONFIG["hard"]["a_denominator"]
@@ -1300,12 +1588,19 @@ class SlotStore:
                 else:
                     next_denominator = max(10.0, round(denominator * 0.99, 2))
             elif difficulty == "easy":
+                easy_balance_cap = MODE_CONFIG["easy"].get("balance_cap", 100000.0)
                 next_denominator = MODE_CONFIG["easy"]["a_denominator"]
                 if winnings > 0:
+                    # Cap the balance at the Easy Mode limit
                     max_deposit_limit = min(
                         MODE_CONFIG["easy"]["cap"],
                         round(max_deposit_limit + winnings, 2),
                     )
+                    # Also cap the new balance
+                    if new_balance > easy_balance_cap:
+                        overflow = new_balance - easy_balance_cap
+                        new_balance = easy_balance_cap
+                        notes.append(f"Balance capped at R{easy_balance_cap:,.0f}. Overflow of R{overflow:,.2f} was not added.")
                 else:
                     max_deposit_limit = max(3.0, round(max_deposit_limit - (total_bet / 2), 2))
                     notes.append("Easy mode loss penalty reduced the deposit limit.")
@@ -1337,7 +1632,9 @@ class SlotStore:
                     status = %s,
                     total_a_hits = %s,
                     max_win_streak = %s,
-                    max_balance = %s
+                    max_balance = %s,
+                    max_multiplier = %s,
+                    single_spin_wins = %s
                 WHERE id = %s
                 """,
                 (
@@ -1358,6 +1655,8 @@ class SlotStore:
                     total_a_hits,
                     max_win_streak,
                     round(max_balance, 2),
+                    round(max_multiplier, 4),
+                    json.dumps(single_spin_wins),
                     user_id,
                 ),
             )
@@ -1432,6 +1731,8 @@ class SlotStore:
         selected_skin = str(payload.get("selectedSkin", "")).strip()
         selected_banner = str(payload.get("selectedBanner", "")).strip()
         selected_avatar = str(payload.get("selectedAvatar", "")).strip()
+        selected_badge = str(payload.get("selectedBadge", "")).strip()
+        selected_theme = str(payload.get("selectedTheme", "")).strip()
         avatar_upload = str(payload.get("avatarUpload", "")).strip()
         banner_upload = str(payload.get("bannerUpload", "")).strip()
         clear_avatar = bool(payload.get("clearAvatar", False))
@@ -1460,6 +1761,23 @@ class SlotStore:
             if selected_avatar and selected_avatar not in valid["avatars"]:
                 raise ValueError("That avatar is not unlocked for this profile.")
 
+            # Validate selected badge - must be owned
+            inventory = json.loads(row.get("inventory") or "{}")
+            owned_badges = inventory.get("badges", [])
+            if selected_badge and selected_badge not in owned_badges:
+                raise ValueError("You don't own that badge.")
+            
+            # Track theme switches for achievements
+            theme_switch_increment = 0
+            current_theme = row.get("selected_theme", "")
+            if selected_theme and selected_theme != current_theme:
+                # Check if the new theme is valid (owned or default)
+                owned_themes = inventory.get("themes", [])
+                default_themes = ["apple", "dark", "light"]
+                if selected_theme not in default_themes and selected_theme not in owned_themes:
+                    raise ValueError("You don't own that theme.")
+                theme_switch_increment = 1
+
             avatar_path = row["custom_avatar_path"]
             banner_path = row["custom_banner_path"]
             if clear_avatar:
@@ -1481,7 +1799,10 @@ class SlotStore:
                     selected_avatar = %s,
                     custom_avatar_path = %s,
                     custom_banner_path = %s,
-                    status = %s
+                    status = %s,
+                    selected_badge = %s,
+                    selected_theme = %s,
+                    theme_switches = theme_switches + %s
                 WHERE id = %s
                 """,
                 (
@@ -1493,6 +1814,9 @@ class SlotStore:
                     avatar_path,
                     banner_path,
                     "Profile updated.",
+                    selected_badge,
+                    selected_theme,
+                    theme_switch_increment,
                     user_id,
                 ),
             )

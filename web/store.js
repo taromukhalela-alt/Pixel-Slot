@@ -3,6 +3,7 @@ const ppBalanceEl = document.getElementById("pp-balance");
 const ppTotalEl = document.getElementById("pp-total");
 const boostersGridEl = document.getElementById("boosters-grid");
 const themesGridEl = document.getElementById("themes-grid");
+const badgesGridEl = document.getElementById("badges-grid");
 
 const state = {
   items: [],
@@ -71,6 +72,7 @@ function createThemeCard(item, owned) {
     </div>
     <div class="store-card__content">
       <strong>${item.name}</strong>
+      ${item.category ? `<small class="theme-category">${item.category}</small>` : ""}
       <div class="store-card__meta">
         <span class="pp-cost">◆ ${item.pp_cost} PP</span>
         ${item.sacrifice > 0 ? `<span class="sacrifice-cost">⧖ R${item.sacrifice.toLocaleString()}</span>` : ""}
@@ -83,6 +85,38 @@ function createThemeCard(item, owned) {
       ${!canAfford || owned ? "disabled" : ""}
       data-item-id="${item.id}"
       data-item-type="theme"
+    >
+      ${owned ? "Owned" : canAfford ? "Purchase" : "Not enough PP"}
+    </button>
+  `;
+  
+  return card;
+}
+
+function createBadgeCard(item, owned) {
+  const card = document.createElement("article");
+  card.className = `store-card store-card--badge store-card--${item.rarity}`;
+  const canAfford = state.userPP >= item.pp_cost;
+  
+  card.innerHTML = `
+    <div class="store-card__badge store-card__badge--${item.rarity}">${item.rarity}</div>
+    <div class="store-card__icon store-card__icon--badge">
+      <span>${item.icon || "🏅"}</span>
+    </div>
+    <div class="store-card__content">
+      <strong>${item.name}</strong>
+      <p>${item.description}</p>
+      <div class="store-card__meta">
+        <span class="pp-cost">◆ ${item.pp_cost} PP</span>
+      </div>
+      ${owned ? `<small class="owned-badge">Owned</small>` : ""}
+    </div>
+    <button 
+      class="button button--primary store-card__button" 
+      type="button"
+      ${!canAfford || owned ? "disabled" : ""}
+      data-item-id="${item.id}"
+      data-item-type="badge"
     >
       ${owned ? "Owned" : canAfford ? "Purchase" : "Not enough PP"}
     </button>
@@ -104,6 +138,19 @@ function getBoosterIcon(id) {
 
 function getThemeIcon(id) {
   const icons = {
+    // Retro/Synth
+    synthwave: "🌆",
+    synthwave90s: "🌃",
+    // Developer
+    gruvbox: "🐻",
+    "tokyo-night": "🌃",
+    "catppuccin-frappe": "🐱",
+    "catppuccin-latte": "☕",
+    // Clean/Modern
+    "off-white": "⬜",
+    oneui: "📱",
+    "apple-glass": "🍎",
+    // Legacy
     cyber_neon: "🌃",
     crystal_ice: "❄",
     phoenix_fire: "🔥",
@@ -117,9 +164,11 @@ function getThemeIcon(id) {
 function renderStore() {
   boostersGridEl.innerHTML = "";
   themesGridEl.innerHTML = "";
+  if (badgesGridEl) badgesGridEl.innerHTML = "";
   
   const boosters = state.items.filter(item => item.type === "booster");
   const themes = state.items.filter(item => item.type === "theme");
+  const badges = state.items.filter(item => item.type === "badge");
   
   for (const item of boosters) {
     const owned = state.inventory?.boosters?.[item.id] || 0;
@@ -129,6 +178,13 @@ function renderStore() {
   for (const item of themes) {
     const owned = state.inventory?.themes?.includes(item.id) || false;
     themesGridEl.appendChild(createThemeCard(item, owned));
+  }
+  
+  if (badgesGridEl) {
+    for (const item of badges) {
+      const owned = state.inventory?.badges?.includes(item.id) || false;
+      badgesGridEl.appendChild(createBadgeCard(item, owned));
+    }
   }
   
   // Add click handlers to purchase buttons

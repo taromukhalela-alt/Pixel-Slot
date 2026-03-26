@@ -134,17 +134,41 @@
             <div>
               <p class="panel__eyebrow">Badges</p>
               <h2>Luck, grind, and leaderboard status</h2>
+              <p class="panel__subtext">Select a badge to display on your profile card. Badges are earned through gameplay achievements.</p>
             </div>
           </div>
           <div id="badge-grid" class="badge-grid"></div>
+          <div id="badge-selector" class="badge-selector" style="display: none;">
+            <label class="field">
+              <span>Display badge on profile:</span>
+              <select id="selected-badge-input">
+                <option value="">None</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel profile-panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Profile Theme</p>
+              <h2>Theme Showcase</h2>
+              <p class="panel__subtext">Your current theme affects how your profile looks to others. Purchase more themes from the store!</p>
+            </div>
+          </div>
+          <div id="owned-themes-grid" class="cosmetic-grid"></div>
+          <div class="profile-theme-current">
+            <strong>Current Theme:</strong>
+            <span id="current-theme-name">Default</span>
+          </div>
         </section>
 
         <section class="panel profile-panel">
           <div class="panel__header">
             <div>
               <p class="panel__eyebrow">Achievements</p>
-              <h2>200+ unlockable achievements</h2>
-              <p class="panel__subtext">Earn achievements by hitting milestones, reaching top ranks, and completing unique challenges.</p>
+              <h2>500+ unlockable achievements</h2>
+              <p class="panel__subtext">Earn achievements by hitting milestones, reaching top ranks, and completing unique challenges. Categories: Spin Cycle, Multiplier Madness, Balance Boss, Big Spender, Theme Master, and SA Special!</p>
             </div>
             <div class="status-pill" id="achievement-status">Loading achievements...</div>
           </div>
@@ -166,10 +190,13 @@
 
           <div class="achievement-filters">
             <button class="achievement-filter is-active" data-filter="all">All</button>
-            <button class="achievement-filter" data-filter="milestone">Milestones</button>
-            <button class="achievement-filter" data-filter="difficulty">Difficulty</button>
-            <button class="achievement-filter" data-filter="wealth">Wealth</button>
-            <button class="achievement-filter" data-filter="rarity">Rarity</button>
+            <button class="achievement-filter" data-filter="spin_cycle">Spin Cycle</button>
+            <button class="achievement-filter" data-filter="multiplier">Multiplier</button>
+            <button class="achievement-filter" data-filter="balance">Balance</button>
+            <button class="achievement-filter" data-filter="spending">Big Spender</button>
+            <button class="achievement-filter" data-filter="themes">Theme Master</button>
+            <button class="achievement-filter" data-filter="sa_special">SA Special</button>
+            <button class="achievement-filter" data-filter="milestone">Legacy</button>
           </div>
 
           <div id="achievement-grid" class="achievement-grid"></div>
