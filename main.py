@@ -5,12 +5,13 @@ import json
 import os
 import random
 import secrets
-import sqlite3
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory, session
+
+from database import create_database
 
 
 ROWS = 3
@@ -175,7 +176,6 @@ NON_A_WEIGHTS = [("B", 4), ("C", 6), ("D", 8)]
 DEFAULT_GRID = [["A"] * ROWS for _ in range(COLS)]
 WEB_DIR = Path(__file__).parent / "web"
 UPLOADS_DIR = WEB_DIR / "uploads"
-DB_PATH = Path(__file__).parent / "slots.db"
 
 DEFAULT_COSMETICS = {
     "skin": "skyline",
@@ -309,11 +309,11 @@ def generate_grid(denominator):
 
 
 class SlotStore:
-    def __init__(self, db_path):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
         self.lock = threading.RLock()
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row
+        # Use PostgreSQL database from database module
+        self._db = create_database()
+        self.conn = self._db  # Alias for compatibility with existing code
         UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
@@ -321,10 +321,8 @@ class SlotStore:
         with self.conn:
             self.conn.executescript(
                 """
-                PRAGMA journal_mode=WAL;
-
                 CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id INTEGER PRIMARY KEY SERIAL,
                     username TEXT NOT NULL UNIQUE,
                     password_salt TEXT NOT NULL,
                     password_hash TEXT NOT NULL,
@@ -363,7 +361,7 @@ class SlotStore:
                 );
 
                 CREATE TABLE IF NOT EXISTS spin_results (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id INTEGER PRIMARY KEY SERIAL,
                     user_id INTEGER NOT NULL,
                     difficulty_mode TEXT NOT NULL,
                     win_amount REAL NOT NULL,
@@ -427,8 +425,11 @@ class SlotStore:
             )
 
     def _table_columns(self, table_name):
-        rows = self.conn.execute(f"PRAGMA table_info({table_name})").fetchall()
-        return {row["name"] for row in rows}
+        rows = self.conn.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = %s",
+            (table_name,)
+        ).fetchall()
+        return {row["column_name"] for row in rows}
 
     def _ensure_table_columns(self, table_name, required_columns):
         existing_columns = self._table_columns(table_name)
@@ -438,7 +439,7 @@ class SlotStore:
             self.conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
 
     def _user_row(self, user_id):
-        return self.conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        return self.conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
 
     def _leaderboard_rows(self, difficulty=None, limit=100):
         if difficulty and difficulty not in MODE_CONFIG:
@@ -461,14 +462,14 @@ class SlotStore:
         """
         params = []
         if difficulty:
-            sql += " AND difficulty_mode = ?"
+            sql += " AND difficulty_mode = %s"
             params.append(difficulty)
         sql += """
             ORDER BY (total_deposit + (CASE WHEN total_games > 0 THEN CAST(total_wins AS REAL) / total_games ELSE 0 END)) DESC,
                      total_deposit DESC,
                      total_wins DESC,
                      username ASC
-            LIMIT ?
+            LIMIT %s
         """
         params.append(limit)
         rows = self.conn.execute(sql, params).fetchall()
@@ -798,9 +799,9 @@ class SlotStore:
             self.conn.execute(
                 """
                 UPDATE users
-                SET prestige_points = prestige_points + ?,
-                    total_pp_earned = total_pp_earned + ?
-                WHERE id = ?
+                SET prestige_points = prestige_points + %s,
+                    total_pp_earned = total_pp_earned + %s
+                WHERE id = %s
                 """,
                 (pp_earned, pp_earned, user_id),
             )
@@ -817,8 +818,8 @@ class SlotStore:
             self.conn.execute(
                 """
                 UPDATE users
-                SET prestige_points = prestige_points - ?
-                WHERE id = ?
+                SET prestige_points = prestige_points - %s
+                WHERE id = %s
                 """,
                 (amount, user_id),
             )
@@ -890,11 +891,11 @@ class SlotStore:
                 self.conn.execute(
                     """
                     UPDATE users
-                    SET prestige_points = prestige_points - ?,
-                        max_deposit_limit = ?,
-                        inventory = ?,
+                    SET prestige_points = prestige_points - %s,
+                        max_deposit_limit = %s,
+                        inventory = %s,
                         store_purchases = store_purchases + 1
-                    WHERE id = ?
+                    WHERE id = %s
                     """,
                     (item["pp_cost"], new_limit, json.dumps(inventory), user_id),
                 )
@@ -916,10 +917,10 @@ class SlotStore:
                 self.conn.execute(
                     """
                     UPDATE users
-                    SET prestige_points = prestige_points - ?,
-                        inventory = ?,
+                    SET prestige_points = prestige_points - %s,
+                        inventory = %s,
                         store_purchases = store_purchases + 1
-                    WHERE id = ?
+                    WHERE id = %s
                     """,
                     (item["pp_cost"], json.dumps(inventory), user_id),
                 )
@@ -1038,18 +1039,20 @@ class SlotStore:
                 self.conn.execute(
                     """
                     INSERT INTO users (username, password_salt, password_hash, display_name, created_at)
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s)
                     """,
                     (username, salt_hex, digest_hex, username, isoformat(utcnow())),
                 )
-            except sqlite3.IntegrityError as exc:
-                raise ValueError("That username is already taken.") from exc
-            row = self.conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+            except Exception as exc:
+                if "unique constraint" in str(exc).lower() or "duplicate key" in str(exc).lower():
+                    raise ValueError("That username is already taken.") from exc
+                raise
+            row = self.conn.execute("SELECT * FROM users WHERE username = %s", (username,)).fetchone()
         return self._snapshot(row)
 
     def authenticate_user(self, username, password):
         with self.lock:
-            row = self.conn.execute("SELECT * FROM users WHERE username = ?", (username.strip(),)).fetchone()
+            row = self.conn.execute("SELECT * FROM users WHERE username = %s", (username.strip(),)).fetchone()
         if not row or not verify_password(password, row["password_salt"], row["password_hash"]):
             raise ValueError("Invalid username or password.")
         return self._snapshot(row)
@@ -1078,7 +1081,7 @@ class SlotStore:
 
             history_reset = bool(previous_mode and previous_mode != difficulty)
             if history_reset:
-                self.conn.execute("DELETE FROM spin_results WHERE user_id = ?", (user_id,))
+                self.conn.execute("DELETE FROM spin_results WHERE user_id = %s", (user_id,))
                 status = (
                     f"Switched from {MODE_CONFIG[previous_mode]['label']} to {config['label']}. "
                     f"Previous run history, leaderboard score, and balance were reset."
@@ -1088,22 +1091,22 @@ class SlotStore:
             self.conn.execute(
                 """
                 UPDATE users
-                SET difficulty_mode = ?,
+                SET difficulty_mode = %s,
                     balance = 0,
                     total_deposit = 0,
-                    max_deposit_limit = ?,
-                    current_a_denominator = ?,
+                    max_deposit_limit = %s,
+                    current_a_denominator = %s,
                     total_games = 0,
                     total_wins = 0,
                     win_streak = 0,
                     consecutive_a_hits = 0,
                     profile_banner_status = 'standard',
-                    last_spin = ?,
+                    last_spin = %s,
                     last_win = 0,
                     last_net = 0,
                     winning_lines = '[]',
-                    status = ?
-                WHERE id = ?
+                    status = %s
+                WHERE id = %s
                 """,
                 (
                     difficulty,
@@ -1139,14 +1142,14 @@ class SlotStore:
             self.conn.execute(
                 """
                 UPDATE users
-                SET balance = balance + ?,
-                    total_deposit = total_deposit + ?,
-                    prestige_points = prestige_points + ?,
-                    total_pp_earned = total_pp_earned + ?,
-                    total_deposits_count = ?,
-                    max_balance = ?,
-                    status = ?
-                WHERE id = ?
+                SET balance = balance + %s,
+                    total_deposit = total_deposit + %s,
+                    prestige_points = prestige_points + %s,
+                    total_pp_earned = total_pp_earned + %s,
+                    total_deposits_count = %s,
+                    max_balance = %s,
+                    status = %s
+                WHERE id = %s
                 """,
                 (amount, amount, pp_earned, pp_earned, new_total_deposits, new_max_balance, f"Added R{amount:.2f}. +{pp_earned:.1f} PP earned!", user_id),
             )
@@ -1249,24 +1252,24 @@ class SlotStore:
             self.conn.execute(
                 """
                 UPDATE users
-                SET balance = ?,
-                    total_deposit = ?,
-                    max_deposit_limit = ?,
-                    current_a_denominator = ?,
-                    total_games = ?,
-                    total_wins = ?,
-                    win_streak = ?,
-                    consecutive_a_hits = ?,
-                    profile_banner_status = ?,
-                    last_spin = ?,
-                    last_win = ?,
-                    last_net = ?,
-                    winning_lines = ?,
-                    status = ?,
-                    total_a_hits = ?,
-                    max_win_streak = ?,
-                    max_balance = ?
-                WHERE id = ?
+                SET balance = %s,
+                    total_deposit = %s,
+                    max_deposit_limit = %s,
+                    current_a_denominator = %s,
+                    total_games = %s,
+                    total_wins = %s,
+                    win_streak = %s,
+                    consecutive_a_hits = %s,
+                    profile_banner_status = %s,
+                    last_spin = %s,
+                    last_win = %s,
+                    last_net = %s,
+                    winning_lines = %s,
+                    status = %s,
+                    total_a_hits = %s,
+                    max_win_streak = %s,
+                    max_balance = %s
+                WHERE id = %s
                 """,
                 (
                     round(new_balance, 2),
@@ -1298,7 +1301,7 @@ class SlotStore:
             
             if newly_unlocked:
                 self.conn.execute(
-                    "UPDATE users SET unlocked_assets = ? WHERE id = ?",
+                    "UPDATE users SET unlocked_assets = %s WHERE id = %s",
                     (json.dumps(list(unlocked_ids)), user_id),
                 )
                 achievement_notes = [f"🏆 Unlocked: {ACHIEVEMENTS[a]['name']}!" for a in newly_unlocked[:3]]
@@ -1318,7 +1321,7 @@ class SlotStore:
                     total_deposit_snapshot,
                     a_denominator_snapshot,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     user_id,
@@ -1402,15 +1405,15 @@ class SlotStore:
             self.conn.execute(
                 """
                 UPDATE users
-                SET display_name = ?,
-                    bio = ?,
-                    selected_skin = ?,
-                    selected_banner = ?,
-                    selected_avatar = ?,
-                    custom_avatar_path = ?,
-                    custom_banner_path = ?,
-                    status = ?
-                WHERE id = ?
+                SET display_name = %s,
+                    bio = %s,
+                    selected_skin = %s,
+                    selected_banner = %s,
+                    selected_avatar = %s,
+                    custom_avatar_path = %s,
+                    custom_banner_path = %s,
+                    status = %s
+                WHERE id = %s
                 """,
                 (
                     display_name,
@@ -1428,7 +1431,7 @@ class SlotStore:
         return {"snapshot": self._snapshot(updated), **self._profile_payload(updated)}
 
 
-store = SlotStore(DB_PATH)
+store = SlotStore()
 
 app = Flask(__name__, static_folder=None)
 app.secret_key = FLASK_SECRET
