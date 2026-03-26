@@ -17,10 +17,34 @@ function percent(value) {
 
 async function requestJson(url) {
   const response = await fetch(url, { credentials: "same-origin" });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error || "Something went wrong.");
+  const contentType = response.headers.get("content-type") || "";
+  const rawText = await response.text();
+  const looksJson =
+    contentType.includes("application/json") ||
+    rawText.trim().startsWith("{") ||
+    rawText.trim().startsWith("[");
+
+  let payload = null;
+  if (rawText && looksJson) {
+    try {
+      payload = JSON.parse(rawText);
+    } catch {
+      payload = null;
+    }
   }
+
+  if (!response.ok) {
+    const apiError = payload && typeof payload === "object" ? payload.error : null;
+    const fallback = rawText?.trim()
+      ? `Request failed (${response.status}). ${rawText.trim().slice(0, 180)}`
+      : `Request failed (${response.status}).`;
+    throw new Error(apiError || fallback);
+  }
+
+  if (payload === null) {
+    throw new Error("Server returned an invalid response (expected JSON).");
+  }
+
   return payload;
 }
 

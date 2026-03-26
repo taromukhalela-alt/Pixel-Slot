@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory, session
+from werkzeug.exceptions import HTTPException
 
 from database import create_database
 
@@ -844,11 +845,15 @@ class SlotStore:
         selected_class = row.get("selected_class") or row.get("difficulty_mode", "easy")
         return {
             "class": selected_class,
+            # Backwards-compatible alias used by some unlock requirements.
+            "difficulty": selected_class,
             "total_games": total_games,
             "total_wins": row["total_wins"],
             "hit_rate": lucky_ratio,
             "global_rank": global_rank,
             "class_rank": class_rank,
+            # Backwards-compatible alias used by some unlock requirements.
+            "mode_rank": class_rank,
             "profile_banner_status": row.get("profile_banner_status"),
             "total_depositable_amount": row.get("total_depositable_amount"),
         }
@@ -2278,6 +2283,24 @@ def handle_value_error(error):
     if request.path.startswith("/api/"):
         return jsonify({"error": str(error)}), 400
     return str(error), 400
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_error(error):
+    """
+    Ensure API endpoints always return JSON, even on unexpected exceptions.
+    Without this, Flask returns an HTML error page, which causes frontend
+    `response.json()` / `JSON.parse()` failures.
+    """
+    if not request.path.startswith("/api/"):
+        # For non-API routes, fall back to Flask's default error rendering.
+        raise error
+
+    if isinstance(error, HTTPException):
+        return jsonify({"error": error.description}), error.code
+
+    app.logger.exception("Unhandled API exception")
+    return jsonify({"error": "Internal server error."}), 500
 
 
 def current_user_id():

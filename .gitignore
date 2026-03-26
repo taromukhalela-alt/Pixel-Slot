@@ -6,3 +6,9 @@ venv/
 env/
 ENV/
 
+# Local SQLite databases + WAL/SHM files (may contain auth + user data)
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+

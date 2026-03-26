@@ -2,6 +2,8 @@
 Database wrapper for slot machine application.
 Supports PostgreSQL (production) and SQLite (local development).
 """
+from __future__ import annotations
+
 import json
 import os
 import sqlite3
@@ -9,18 +11,23 @@ import threading
 from contextlib import contextmanager
 from typing import Any, Optional
 
-import psycopg2
-from psycopg2 import pool
-from psycopg2.extras import RealDictCursor
+try:
+    import psycopg2  # type: ignore
+    from psycopg2 import pool  # type: ignore
+    from psycopg2.extras import RealDictCursor  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    psycopg2 = None
+    pool = None
+    RealDictCursor = None
 
 # Database configuration from environment
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 # Use SQLite fallback for local development
-USE_SQLITE = not DATABASE_URL
+USE_SQLITE = not DATABASE_URL or psycopg2 is None
 
 # Connection pool for PostgreSQL
-_connection_pool: Optional[pool.ThreadedConnectionPool] = None
+_connection_pool: Optional["pool.ThreadedConnectionPool"] = None
 _pool_lock = threading.Lock()
 
 # SQLite connection
@@ -46,6 +53,8 @@ def init_pool(min_conn: int = 1, max_conn: int = 5):
     """Initialize the connection pool (PostgreSQL only)."""
     if _is_sqlite():
         return
+    if pool is None:
+        raise RuntimeError("psycopg2 is required for PostgreSQL connections. Install it or unset DATABASE_URL to use SQLite.")
     global _connection_pool
     if _connection_pool is None:
         with _pool_lock:
