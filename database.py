@@ -142,10 +142,67 @@ class ConnectionWrapper:
         conn = _connection_pool.getconn()
         try:
             cursor = conn.cursor(cursor_factory=RealDictCursor)
-            statements = [s.strip() for s in sql.split(';') if s.strip()]
+            # Parse SQL to find complete statements
+            sql = sql.strip()
+            
+            # Find all semicolon-terminated statements
+            # Use a state machine to handle quoted strings and parentheses
+            statements = []
+            current = []
+            in_string = False
+            string_char = None
+            paren_depth = 0
+            
+            i = 0
+            while i < len(sql):
+                c = sql[i]
+                
+                # Handle string literals - count backslashes to handle escaped quotes
+                if c in ("'", '"'):
+                    backslash_count = 0
+                    j = i - 1
+                    while j >= 0 and sql[j] == '\\':
+                        backslash_count += 1
+                        j -= 1
+                    # Quote is escaped only if preceded by odd number of backslashes
+                    if backslash_count % 2 == 0:
+                        if not in_string:
+                            in_string = True
+                            string_char = c
+                        elif c == string_char:
+                            in_string = False
+                            string_char = None
+                
+                # Track parentheses (but not inside strings)
+                if not in_string:
+                    if c == '(':
+                        paren_depth += 1
+                    elif c == ')':
+                        paren_depth -= 1
+                    elif c == ';' and paren_depth == 0:
+                        # End of statement
+                        stmt = ''.join(current).strip()
+                        if stmt:
+                            statements.append(stmt)
+                        current = []
+                        i += 1
+                        continue
+                
+                current.append(c)
+                i += 1
+            
+            # Handle any remaining content
+            if current:
+                stmt = ''.join(current).strip()
+                if stmt:
+                    statements.append(stmt)
+            
+            # Execute each statement
             for statement in statements:
+                statement = statement.strip()
                 if statement:
                     cursor.execute(statement)
+            
             conn.commit()
             cursor.close()
             _connection_pool.putconn(conn)
