@@ -54,7 +54,7 @@ CLASS_CONFIG = {
         "min_tda_floor": 10.0,
         "recharge_cooldown_hours": 48,
         "a_denominator": 200.0,
-        "deposit_cap": 500.0,  # Can move up to R500 to play balance
+        "deposit_cap": None,  # Can move up to R500 to play balance
     },
     "hard": {
         "name": "Hard",
@@ -63,7 +63,7 @@ CLASS_CONFIG = {
         "bankruptcy_protection": False,  # Game Over allowed
         "min_tda_floor": 0.0,
         "recharge_cooldown_hours": None,  # No recharge available
-        "a_denominator": 10.0,
+        "a_denominator": 50.0,  # Better odds than before (was 10)
         "deposit_cap": None,  # No limit - can transfer any amount
     },
 }

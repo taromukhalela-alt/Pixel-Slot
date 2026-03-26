@@ -31,7 +31,7 @@ The TDA economy system is a new economy model for the Pixel Slot game that provi
 - **Profit Multiplier**: 1.0 (1:1 profit)
 - **Bankruptcy Protection**: No (can reach R0)
 - **Recharge Cooldown**: None (no recharge available)
-- **A-Denominator**: 10 (challenging odds)
+- **A-Denominator**: 50 (moderate odds, better than before)
 - **Deposit Cap**: None (unlimited transfers)
 
 ## Core Concepts
