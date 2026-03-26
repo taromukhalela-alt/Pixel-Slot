@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Store | Pixel Slot Studio</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero hero--compact">
+        <nav class="topbar">
+          <a class="brandmark" href="/">Pixel Slot Studio</a>
+          <div class="topbar__links">
+            <a class="topbar__link" href="/">Game</a>
+            <a class="topbar__link" href="/profile">Profile</a>
+            <a class="topbar__link" href="/leaderboard">Leaderboard</a>
+            <a class="topbar__link" href="/creator">Creator</a>
+          </div>
+        </nav>
+
+        <div class="hero__copy">
+          <p class="eyebrow">Prestige Shop</p>
+          <h1>Spend PP on Boosters, Themes, and Exclusive Cosmetics.</h1>
+          <p class="hero__text">
+            Earn Prestige Points (PP) at R10=1PP. Use PP to buy boosters and cosmetic themes. Some items require a permanent sacrifice from your max deposit limit.
+          </p>
+        </div>
+        <div class="hero__orbs" aria-hidden="true">
+          <span class="orb orb--blue"></span>
+          <span class="orb orb--green"></span>
+          <span class="orb orb--peach"></span>
+        </div>
+      </header>
+
+      <main class="store-layout">
+        <section class="panel store-wallet-panel">
+          <div class="wallet-display">
+            <div class="pp-balance">
+              <span class="pp-icon">◆</span>
+              <div>
+                <strong id="pp-balance">0.0</strong>
+                <small>Prestige Points</small>
+              </div>
+            </div>
+            <div class="pp-earned">
+              <small>Lifetime earned</small>
+              <strong id="pp-total">0.0 PP</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel store-panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Boosters</p>
+              <h2>Game Enhancement Items</h2>
+              <p class="panel__subtext">Boosters provide temporary or permanent gameplay advantages. Stack effects where applicable.</p>
+            </div>
+            <div class="status-pill" id="store-status">Loading store...</div>
+          </div>
+          <div id="boosters-grid" class="store-grid"></div>
+        </section>
+
+        <section class="panel store-panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Cosmetic Themes</p>
+              <h2>Visual Upgrades</h2>
+              <p class="panel__subtext">Unlock exclusive visual themes for your profile. Each theme permanently unlocks for your account.</p>
+            </div>
+          </div>
+          <div id="themes-grid" class="store-grid"></div>
+        </section>
+
+        <section class="panel store-panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Sacrifice Info</p>
+              <h2>How the Sacrifice Works</h2>
+              <p class="panel__subtext">Some premium items require a permanent sacrifice from your max deposit limit. This is non-reversible and reflects your commitment to the cosmetic or booster.</p>
+            </div>
+          </div>
+          <div class="sacrifice-info">
+            <div class="sacrifice-card">
+              <strong>Example: Shield Advanced</strong>
+              <p>Cost: 150 PP + R1,000 sacrifice from max limit</p>
+              <small>Your max deposit limit would permanently decrease by R1,000</small>
+            </div>
+            <div class="sacrifice-card">
+              <strong>Why sacrifice?</strong>
+              <p>Premium cosmetics and powerful boosters require skin in the game. The sacrifice proves your dedication.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/theme.js" defer></script>
+    <script src="/store.js" defer></script>
+  </body>
+</html>

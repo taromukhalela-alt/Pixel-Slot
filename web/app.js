@@ -1,27 +1,37 @@
 const reelsEl = document.getElementById("reels");
 const reelTemplate = document.getElementById("reel-template");
 const symbolTemplate = document.getElementById("symbol-template");
+const difficultyModalEl = document.getElementById("difficulty-modal");
+const difficultyGridEl = document.getElementById("difficulty-grid");
+const difficultyEyebrowEl = document.getElementById("difficulty-eyebrow");
+const difficultyTitleEl = document.getElementById("difficulty-title");
+const difficultyCopyEl = document.getElementById("difficulty-copy");
+const difficultyCloseButtonEl = document.getElementById("difficulty-close-button");
 
 const balanceEl = document.getElementById("balance");
 const spinTotalEl = document.getElementById("spin-total");
+const difficultyLabelEl = document.getElementById("difficulty-label");
+const depositCapEl = document.getElementById("deposit-cap");
+const aOddsEl = document.getElementById("a-odds");
+const winRatioEl = document.getElementById("win-ratio");
 const lastWinEl = document.getElementById("last-win");
 const lastNetEl = document.getElementById("last-net");
 const winningLinesEl = document.getElementById("winning-lines");
 const statusPillEl = document.getElementById("status-pill");
-const depositTierEl = document.getElementById("deposit-tier");
-const totalDepositEl = document.getElementById("total-deposit");
 
 const authTitleEl = document.getElementById("auth-title");
 const guestAuthEl = document.getElementById("guest-auth");
 const userPanelEl = document.getElementById("user-panel");
 const usernameDisplayEl = document.getElementById("username-display");
-const tierDisplayEl = document.getElementById("tier-display");
+const modeDisplayEl = document.getElementById("mode-display");
 const topTenDisplayEl = document.getElementById("top-ten-display");
 const authFormEl = document.getElementById("auth-form");
 const authSubmitEl = document.getElementById("auth-submit");
 const usernameInputEl = document.getElementById("username-input");
 const passwordInputEl = document.getElementById("password-input");
 const logoutButtonEl = document.getElementById("logout-button");
+const chooseModeButtonEl = document.getElementById("choose-mode-button");
+const modeResetHintEl = document.getElementById("mode-reset-hint");
 
 const depositInput = document.getElementById("deposit-input");
 const depositButton = document.getElementById("deposit-button");
@@ -34,37 +44,28 @@ const state = {
   authMode: "login",
   authenticated: false,
   user: null,
-  balance: 0,
   bet: 10,
-  limits: {
-    minBet: 1,
-    maxBet: 300,
-    maxLines: 3,
-    maxDeposit: 3000,
-  },
   reels: [],
   isSpinning: false,
+  difficultyOptions: [],
+  needsDifficultySelection: false,
+  modeChooserOpen: false,
 };
 
-function randSymbol() {
-  return symbols[Math.floor(Math.random() * symbols.length)];
+function currency(value) {
+  return `R${Number(value).toFixed(2).replace(".00", "")}`;
 }
 
-function currency(value) {
-  return `R${value}`;
+function percent(value) {
+  return `${(Number(value) * 100).toFixed(1)}%`;
 }
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function formatTier(tier) {
-  const labels = {
-    A: "Tier A",
-    B: "Tier B",
-    C: "Tier C",
-  };
-  return labels[tier] || "Guest";
+function randSymbol() {
+  return symbols[Math.floor(Math.random() * symbols.length)];
 }
 
 function createSymbolCard(symbol) {
@@ -92,7 +93,6 @@ function createReels() {
     const reel = reelTemplate.content.firstElementChild.cloneNode(true);
     const track = reel.querySelector(".reel__symbols");
     const cards = setTrackToColumns(track, ["A", "A", "A"]);
-
     reelsEl.appendChild(reel);
     state.reels.push({ reel, track, cards });
   }
@@ -103,38 +103,6 @@ function renderAuthMode() {
     button.classList.toggle("is-active", button.dataset.authMode === state.authMode);
   });
   authSubmitEl.textContent = state.authMode === "login" ? "Login" : "Create account";
-  passwordInputEl.autocomplete = state.authMode === "login" ? "current-password" : "new-password";
-}
-
-function updateControls() {
-  const activeLines = state.limits.maxLines;
-  const maxBetForRound = state.balance > 0 ? Math.min(state.limits.maxBet, Math.floor(state.balance / activeLines)) : 0;
-  state.bet = maxBetForRound <= 0 ? state.limits.minBet : clamp(state.bet, state.limits.minBet, maxBetForRound);
-
-  betValueEl.textContent = state.bet;
-  balanceEl.textContent = currency(state.balance);
-  spinTotalEl.textContent = currency(activeLines * state.bet);
-  totalDepositEl.textContent = currency(state.user?.totalDeposit ?? 0);
-  depositTierEl.textContent = formatTier(state.user?.depositTier);
-
-  depositInput.max = String(state.limits.maxDeposit ?? 3000);
-
-  const canSpin =
-    state.authenticated &&
-    !state.isSpinning &&
-    state.balance >= activeLines * state.limits.minBet &&
-    activeLines * state.bet <= state.balance;
-
-  spinButton.disabled = !canSpin;
-  depositButton.disabled = !state.authenticated;
-  depositInput.disabled = !state.authenticated;
-}
-
-function renderResult(data) {
-  lastWinEl.textContent = currency(data.lastWin ?? 0);
-  lastNetEl.textContent = currency(data.lastNet ?? 0);
-  winningLinesEl.textContent = data.winningLines?.length ? data.winningLines.join(", ") : "-";
-  statusPillEl.textContent = data.status;
 }
 
 function renderAccount() {
@@ -145,20 +113,47 @@ function renderAccount() {
 
   if (isAuthenticated) {
     usernameDisplayEl.textContent = state.user.displayName || state.user.username;
-    tierDisplayEl.textContent = formatTier(state.user.depositTier);
+    modeDisplayEl.textContent = state.user.difficultyLabel;
     topTenDisplayEl.textContent = state.user.isTopTen ? "Unlocked" : "Locked";
+    chooseModeButtonEl.textContent = state.user.difficulty ? "Change mode" : "Select mode";
+    modeResetHintEl.textContent = state.user.difficulty
+      ? "Changing mode wipes your current run history, balance, and leaderboard score."
+      : "Pick a mode before you deposit or spin.";
   }
 }
 
-function applySnapshot(data) {
-  state.authenticated = data.authenticated;
-  state.user = data.user;
-  state.balance = data.balance;
-  state.limits = data.limits;
-  renderResult(data);
-  paintFinalGrid(data.lastSpin, data.winningLines);
-  renderAccount();
-  updateControls();
+function updateControls() {
+  const balance = state.user?.balance ?? 0;
+  const cap = state.user?.maxDepositLimit ?? 0;
+  const maxBetPerLine = Math.max(1, Math.floor(Math.min(balance, cap) / 3));
+  state.bet = clamp(state.bet, 1, maxBetPerLine || 1);
+  betValueEl.textContent = state.bet;
+
+  balanceEl.textContent = currency(balance);
+  spinTotalEl.textContent = currency(state.bet * 3);
+  difficultyLabelEl.textContent = state.user?.difficultyLabel ?? "Unset";
+  depositCapEl.textContent = currency(cap);
+  aOddsEl.textContent = state.user?.aOddsText ?? "Choose mode";
+  winRatioEl.textContent = percent(state.user?.hitRate ?? 0);
+  depositInput.max = String(cap || 0);
+
+  const canSpin =
+    state.authenticated &&
+    !state.needsDifficultySelection &&
+    !state.isSpinning &&
+    balance >= state.bet * 3 &&
+    state.bet * 3 <= cap;
+
+  spinButton.disabled = !canSpin;
+  depositButton.disabled = !state.authenticated || state.needsDifficultySelection;
+  depositInput.disabled = !state.authenticated || state.needsDifficultySelection;
+}
+
+function renderResult(data) {
+  lastWinEl.textContent = currency(data.lastWin ?? 0);
+  lastNetEl.textContent = currency(data.lastNet ?? 0);
+  winningLinesEl.textContent = data.winningLines?.length ? data.winningLines.join(", ") : "-";
+  statusPillEl.textContent = data.status;
 }
 
 function paintFinalGrid(columns, winningLines = []) {
@@ -170,24 +165,20 @@ function paintFinalGrid(columns, winningLines = []) {
 function animateSpin(finalColumns, winningLines) {
   state.isSpinning = true;
   updateControls();
-
   state.reels.forEach((reelState, columnIndex) => {
     const previewSymbols = [];
     for (let i = 0; i < 12; i += 1) {
       previewSymbols.push(randSymbol());
     }
     previewSymbols.push(...finalColumns[columnIndex]);
-
     reelState.track.innerHTML = "";
     const animatedCards = previewSymbols.map((symbol) => {
       const card = createSymbolCard(symbol);
       reelState.track.appendChild(card);
       return card;
     });
-
     reelState.track.style.transition = "none";
     reelState.track.style.transform = "translateY(0)";
-
     requestAnimationFrame(() => {
       const cardHeight = animatedCards[0].getBoundingClientRect().height + 14;
       const distance = (previewSymbols.length - 3) * cardHeight;
@@ -212,12 +203,85 @@ async function requestJson(url, options = {}) {
     credentials: "same-origin",
     ...options,
   });
-
   const payload = await response.json();
   if (!response.ok) {
     throw new Error(payload.error || "Something went wrong.");
   }
   return payload;
+}
+
+function renderDifficultyChooser() {
+  difficultyGridEl.innerHTML = "";
+  const shouldShow = state.authenticated && (state.needsDifficultySelection || state.modeChooserOpen);
+  difficultyModalEl.classList.toggle("is-hidden", !shouldShow);
+  difficultyCloseButtonEl.classList.toggle("is-hidden", state.needsDifficultySelection);
+  if (!shouldShow) {
+    return;
+  }
+
+  const currentMode = state.user?.difficulty || "";
+  const currentModeLabel = state.user?.difficultyLabel || "Unset";
+  const isChanging = Boolean(currentMode);
+  difficultyEyebrowEl.textContent = isChanging ? "Switch class" : "Choose your class";
+  difficultyTitleEl.textContent = isChanging ? "Change your difficulty" : "Pick your difficulty";
+  difficultyCopyEl.textContent = isChanging
+    ? `Your current class is ${currentModeLabel}. Switching to another mode resets that run's balance, deposit score, and leaderboard history.`
+    : "Choose the mode that drives your deposit cap, odds, and leaderboard class.";
+
+  for (const option of state.difficultyOptions) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = `difficulty-option ${currentMode === option.id ? "is-active" : ""}`;
+    card.innerHTML = `
+      <strong>${option.label}</strong>
+      <span>Starting cap ${currency(option.startingLimit)}</span>
+      <small>${currentMode === option.id ? "Current mode" : `A odds 1 in ${option.aDenominator}`}</small>
+    `;
+    card.addEventListener("click", async () => {
+      if (currentMode === option.id) {
+        state.modeChooserOpen = false;
+        renderDifficultyChooser();
+        statusPillEl.textContent = `${option.label} mode is already active.`;
+        return;
+      }
+
+      if (
+        currentMode &&
+        !window.confirm(
+          `Switch to ${option.label} mode? This will delete your current ${currentModeLabel} run history, reset your balance to R0, and clear its leaderboard progress.`
+        )
+      ) {
+        return;
+      }
+
+      try {
+        const payload = await requestJson("/api/select-difficulty", {
+          method: "POST",
+          body: JSON.stringify({ difficulty: option.id }),
+        });
+        state.modeChooserOpen = false;
+        applySnapshot(payload);
+      } catch (error) {
+        statusPillEl.textContent = error.message;
+      }
+    });
+    difficultyGridEl.appendChild(card);
+  }
+}
+
+function applySnapshot(data) {
+  state.authenticated = data.authenticated;
+  state.user = data.user;
+  state.difficultyOptions = data.difficultyOptions || [];
+  state.needsDifficultySelection = data.needsDifficultySelection;
+  if (!state.needsDifficultySelection) {
+    state.modeChooserOpen = false;
+  }
+  renderResult(data);
+  paintFinalGrid(data.lastSpin, data.winningLines);
+  renderAccount();
+  renderDifficultyChooser();
+  updateControls();
 }
 
 async function refreshState() {
@@ -226,7 +290,7 @@ async function refreshState() {
 }
 
 async function deposit() {
-  const amount = Number.parseInt(depositInput.value, 10);
+  const amount = Number.parseFloat(depositInput.value);
   try {
     const data = await requestJson("/api/deposit", {
       method: "POST",
@@ -240,24 +304,22 @@ async function deposit() {
 }
 
 async function spin() {
-  if (state.isSpinning || !state.authenticated) {
+  if (state.isSpinning || !state.authenticated || state.needsDifficultySelection) {
     return;
   }
-
   statusPillEl.textContent = "Spinning reels...";
   try {
     const data = await requestJson("/api/spin", {
       method: "POST",
-      body: JSON.stringify({
-        bet: state.bet,
-      }),
+      body: JSON.stringify({ bet: state.bet }),
     });
     state.authenticated = data.authenticated;
     state.user = data.user;
-    state.balance = data.balance;
-    state.limits = data.limits;
+    state.difficultyOptions = data.difficultyOptions || [];
+    state.needsDifficultySelection = data.needsDifficultySelection;
     renderResult(data);
     renderAccount();
+    renderDifficultyChooser();
     animateSpin(data.lastSpin, data.winningLines || []);
   } catch (error) {
     statusPillEl.textContent = error.message;
@@ -288,10 +350,20 @@ async function logout() {
       method: "POST",
       body: JSON.stringify({}),
     });
+    state.modeChooserOpen = false;
     await refreshState();
   } catch (error) {
     statusPillEl.textContent = error.message;
   }
+}
+
+function openModeChooser() {
+  if (!state.authenticated) {
+    statusPillEl.textContent = "Sign in before choosing a mode.";
+    return;
+  }
+  state.modeChooserOpen = true;
+  renderDifficultyChooser();
 }
 
 document.querySelectorAll("[data-auth-mode]").forEach((button) => {
@@ -304,15 +376,27 @@ document.querySelectorAll("[data-auth-mode]").forEach((button) => {
 document.querySelectorAll("[data-adjust]").forEach((button) => {
   button.addEventListener("click", () => {
     const delta = Number.parseInt(button.dataset.delta, 10);
-    state.bet = clamp(state.bet + delta, state.limits.minBet, state.limits.maxBet);
+    state.bet = Math.max(1, state.bet + delta);
     updateControls();
   });
 });
 
 authFormEl.addEventListener("submit", submitAuth);
 logoutButtonEl.addEventListener("click", logout);
+chooseModeButtonEl.addEventListener("click", openModeChooser);
 depositButton.addEventListener("click", deposit);
 spinButton.addEventListener("click", spin);
+difficultyCloseButtonEl.addEventListener("click", () => {
+  state.modeChooserOpen = false;
+  renderDifficultyChooser();
+});
+difficultyModalEl.addEventListener("click", (event) => {
+  if (event.target !== difficultyModalEl || state.needsDifficultySelection) {
+    return;
+  }
+  state.modeChooserOpen = false;
+  renderDifficultyChooser();
+});
 
 createReels();
 renderAuthMode();

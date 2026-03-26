@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Profile | Pixel Slot Studio</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -15,6 +16,7 @@
             <a class="topbar__link" href="/">Game</a>
             <a class="topbar__link topbar__link--active" href="/profile">Profile</a>
             <a class="topbar__link" href="/leaderboard">Leaderboard</a>
+            <a class="topbar__link" href="/store">Store</a>
             <a class="topbar__link" href="/creator">Creator</a>
           </div>
         </nav>
@@ -23,7 +25,7 @@
           <p class="eyebrow">Player profile</p>
           <h1>Build a profile that looks earned, not generic.</h1>
           <p class="hero__text">
-            Edit your identity, show off badges, upload your own visuals, and unlock elite cosmetics when you crack the top 10.
+            Edit your identity, track your active class, show off badges, and unlock elite cosmetics when you crack the top 10.
           </p>
         </div>
         <div class="hero__orbs" aria-hidden="true">
@@ -47,18 +49,31 @@
                 <h2 id="profile-display-name">Pixel Spinner</h2>
                 <p class="profile-copy__handle" id="profile-username">@guest</p>
                 <p class="profile-copy__bio" id="profile-bio">Sign in to build your player card.</p>
+                <p class="profile-copy__meta" id="profile-mode-meta">Difficulty unset</p>
               </div>
             </div>
           </div>
 
           <div class="profile-meta-grid">
             <article class="stat-card">
-              <span class="stat-card__label">Top spin rank</span>
-              <strong id="rank-top-spin">-</strong>
+              <span class="stat-card__label">Global rank</span>
+              <strong id="rank-global">-</strong>
             </article>
             <article class="stat-card">
-              <span class="stat-card__label">Frequent winner rank</span>
-              <strong id="rank-frequency">-</strong>
+              <span class="stat-card__label">Class rank</span>
+              <strong id="rank-mode">-</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Difficulty</span>
+              <strong id="profile-difficulty">Unset</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Total deposit score</span>
+              <strong id="profile-total-deposit">R0</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Deposit cap</span>
+              <strong id="profile-deposit-cap">R0</strong>
             </article>
             <article class="stat-card">
               <span class="stat-card__label">Account days</span>
@@ -76,7 +91,7 @@
             <div>
               <p class="panel__eyebrow">Profile studio</p>
               <h2>Edit your profile</h2>
-              <p class="panel__subtext">Profile badges and ranking unlocks are calculated on the server after every spin.</p>
+              <p class="panel__subtext">Badges, leaderboard standing, difficulty rank, and unlocks are all calculated on the server after every spin.</p>
             </div>
             <div class="status-pill" id="profile-status">Loading profile...</div>
           </div>
@@ -127,9 +142,45 @@
         <section class="panel profile-panel">
           <div class="panel__header">
             <div>
+              <p class="panel__eyebrow">Achievements</p>
+              <h2>200+ unlockable achievements</h2>
+              <p class="panel__subtext">Earn achievements by hitting milestones, reaching top ranks, and completing unique challenges.</p>
+            </div>
+            <div class="status-pill" id="achievement-status">Loading achievements...</div>
+          </div>
+          
+          <div class="profile-achievements__summary">
+            <div class="profile-achievements__stat">
+              <strong id="achievements-unlocked">0</strong>
+              <small>Unlocked</small>
+            </div>
+            <div class="profile-achievements__stat">
+              <strong id="achievements-total">0</strong>
+              <small>Total</small>
+            </div>
+            <div class="profile-achievements__stat">
+              <strong id="achievements-progress">0%</strong>
+              <small>Complete</small>
+            </div>
+          </div>
+
+          <div class="achievement-filters">
+            <button class="achievement-filter is-active" data-filter="all">All</button>
+            <button class="achievement-filter" data-filter="milestone">Milestones</button>
+            <button class="achievement-filter" data-filter="difficulty">Difficulty</button>
+            <button class="achievement-filter" data-filter="wealth">Wealth</button>
+            <button class="achievement-filter" data-filter="rarity">Rarity</button>
+          </div>
+
+          <div id="achievement-grid" class="achievement-grid"></div>
+        </section>
+
+        <section class="panel profile-panel">
+          <div class="panel__header">
+            <div>
               <p class="panel__eyebrow">Cosmetics</p>
               <h2>Skins, banners, and profile pics</h2>
-              <p class="panel__subtext">Top 10 players unlock elite cosmetics automatically. Custom uploads always take priority when enabled.</p>
+              <p class="panel__subtext">Some palettes unlock through games, wins, streaks, hard mode, or leaderboard rank. Custom uploads still take priority when enabled.</p>
             </div>
           </div>
 
@@ -157,6 +208,7 @@
       </main>
     </div>
 
+    <script src="/theme.js" defer></script>
     <script src="/profile.js" defer></script>
   </body>
 </html>

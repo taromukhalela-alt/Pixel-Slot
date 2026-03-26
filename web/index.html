@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pixel Slot Studio</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -15,15 +16,16 @@
             <a class="topbar__link topbar__link--active" href="/">Game</a>
             <a class="topbar__link" href="/profile">Profile</a>
             <a class="topbar__link" href="/leaderboard">Leaderboard</a>
+            <a class="topbar__link" href="/store">Store</a>
             <a class="topbar__link" href="/creator">Creator</a>
           </div>
         </nav>
 
         <div class="hero__copy">
-          <p class="eyebrow">Authenticated slot challenge</p>
-          <h1>Spin, style your profile, and climb into the top 10.</h1>
+          <p class="eyebrow">Difficulty-driven slot challenge</p>
+          <h1>Choose a class, manage your cap, and push your score up the global board.</h1>
           <p class="hero__text">
-            Secure gameplay, profile cosmetics, server-side badges, and leaderboard tiers that track how wild your luck really gets.
+            This is a play-money game only. All RNG, odds, rank changes, and balance logic happen on the server.
           </p>
         </div>
         <div class="hero__orbs" aria-hidden="true">
@@ -37,13 +39,40 @@
         <section class="panel machine-panel">
           <div class="panel__header">
             <div>
-              <p class="panel__eyebrow">Reels</p>
-              <h2>All 3 horizontal lines are live on every spin</h2>
+              <p class="panel__eyebrow">Live board</p>
+              <h2>Spin inside your chosen difficulty</h2>
               <p class="panel__subtext">
-                Sign in to record spins, unlock badges, and push your profile into the leaderboard spotlight.
+                Hard, Medium, and Easy each have different deposit caps, A-odds, and recovery pressure.
               </p>
             </div>
             <div class="status-pill" id="status-pill">Loading your session...</div>
+          </div>
+
+          <div class="stats-grid stats-grid--game">
+            <article class="stat-card">
+              <span class="stat-card__label">Balance</span>
+              <strong id="balance">R0</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Spin total</span>
+              <strong id="spin-total">R0</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Difficulty</span>
+              <strong id="difficulty-label">Unset</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Deposit cap</span>
+              <strong id="deposit-cap">R0</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">A probability</span>
+              <strong id="a-odds">Choose mode</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Win ratio</span>
+              <strong id="win-ratio">0%</strong>
+            </article>
           </div>
 
           <div class="reels" id="reels"></div>
@@ -73,25 +102,6 @@
         </section>
 
         <aside class="sidebar">
-          <section class="panel stats-grid">
-            <article class="stat-card">
-              <span class="stat-card__label">Balance</span>
-              <strong id="balance">R0</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-card__label">Spin total</span>
-              <strong id="spin-total">R0</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-card__label">Deposit tier</span>
-              <strong id="deposit-tier">Guest</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-card__label">Total deposited</span>
-              <strong id="total-deposit">R0</strong>
-            </article>
-          </section>
-
           <section class="panel auth-panel">
             <div class="panel__header compact">
               <div>
@@ -113,12 +123,7 @@
                 </label>
                 <label class="field">
                   <span>Password</span>
-                  <input
-                    id="password-input"
-                    type="password"
-                    minlength="8"
-                    autocomplete="current-password"
-                  />
+                  <input id="password-input" type="password" minlength="8" autocomplete="current-password" />
                 </label>
                 <button id="auth-submit" class="button button--primary" type="submit">Login</button>
               </form>
@@ -130,13 +135,15 @@
                 <strong id="username-display">-</strong>
               </div>
               <div class="account-summary__row">
-                <span>Leaderboard tier</span>
-                <strong id="tier-display">-</strong>
+                <span>Mode</span>
+                <strong id="mode-display">-</strong>
               </div>
               <div class="account-summary__row">
                 <span>Top 10 unlocks</span>
                 <strong id="top-ten-display">Locked</strong>
               </div>
+              <button id="choose-mode-button" class="button button--soft button--block" type="button">Select mode</button>
+              <p class="account-summary__hint" id="mode-reset-hint">Changing mode resets your current run history and leaderboard score.</p>
               <a class="button button--soft button--block" href="/profile">Open profile</a>
               <a class="button button--ghost button--block" href="/leaderboard">Open leaderboard</a>
               <button id="logout-button" class="button button--ghost button--block" type="button">Logout</button>
@@ -147,17 +154,17 @@
             <div class="panel__header compact">
               <div>
                 <p class="panel__eyebrow">Game controls</p>
-                <h2>Fund and spin</h2>
+                <h2>Fund and manage the run</h2>
               </div>
             </div>
 
             <label class="field">
               <span>Deposit amount</span>
               <div class="field__row">
-                <input id="deposit-input" type="number" min="1" max="3000" step="1" value="200" />
+                <input id="deposit-input" type="number" min="1" step="1" value="200" />
                 <button id="deposit-button" class="button button--soft" type="button">Add funds</button>
               </div>
-              <small class="field__hint">Single deposits are capped at R3000.</small>
+              <small class="field__hint">You cannot deposit or bet above your current mode cap.</small>
             </label>
 
             <div class="stepper-group">
@@ -175,6 +182,22 @@
       </main>
     </div>
 
+    <div id="difficulty-modal" class="difficulty-modal is-hidden">
+      <div class="difficulty-card">
+        <div class="difficulty-card__header">
+          <div>
+            <p class="panel__eyebrow" id="difficulty-eyebrow">Choose your class</p>
+            <h2 id="difficulty-title">Pick your difficulty</h2>
+            <p class="panel__subtext" id="difficulty-copy">
+              Choose the mode that drives your deposit cap, odds, and leaderboard class.
+            </p>
+          </div>
+          <button id="difficulty-close-button" class="button button--ghost difficulty-close is-hidden" type="button">Close</button>
+        </div>
+        <div class="difficulty-grid" id="difficulty-grid"></div>
+      </div>
+    </div>
+
     <template id="reel-template">
       <div class="reel">
         <div class="reel__viewport">
@@ -189,6 +212,7 @@
       </div>
     </template>
 
+    <script src="/theme.js" defer></script>
     <script src="/app.js" defer></script>
   </body>
 </html>

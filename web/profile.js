@@ -15,14 +15,23 @@ const avatarInitialsEl = document.getElementById("profile-avatar-initials");
 const displayNameEl = document.getElementById("profile-display-name");
 const usernameEl = document.getElementById("profile-username");
 const bioEl = document.getElementById("profile-bio");
-const rankTopSpinEl = document.getElementById("rank-top-spin");
-const rankFrequencyEl = document.getElementById("rank-frequency");
+const modeMetaEl = document.getElementById("profile-mode-meta");
+const rankGlobalEl = document.getElementById("rank-global");
+const rankModeEl = document.getElementById("rank-mode");
+const difficultyEl = document.getElementById("profile-difficulty");
+const totalDepositEl = document.getElementById("profile-total-deposit");
+const depositCapEl = document.getElementById("profile-deposit-cap");
 const accountDaysEl = document.getElementById("account-days");
 const hitRateEl = document.getElementById("profile-hit-rate");
 const badgeGridEl = document.getElementById("badge-grid");
 const skinOptionsEl = document.getElementById("skin-options");
 const bannerOptionsEl = document.getElementById("banner-options");
 const avatarOptionsEl = document.getElementById("avatar-options");
+const achievementStatusEl = document.getElementById("achievement-status");
+const achievementsUnlockedEl = document.getElementById("achievements-unlocked");
+const achievementsTotalEl = document.getElementById("achievements-total");
+const achievementsProgressEl = document.getElementById("achievements-progress");
+const achievementGridEl = document.getElementById("achievement-grid");
 
 const state = {
   profile: null,
@@ -30,14 +39,26 @@ const state = {
   cosmetics: null,
   stats: null,
   ranks: null,
+  achievements: [],
+  achievementsTotal: 0,
+  achievementsUnlocked: 0,
+  achievementFilter: "all",
   avatarUpload: "",
   bannerUpload: "",
   clearAvatar: false,
   clearBanner: false,
 };
 
+function currency(value) {
+  return `R${Number(value || 0).toFixed(2).replace(".00", "")}`;
+}
+
 function percent(value) {
-  return `${(Number(value) * 100).toFixed(1)}%`;
+  return `${(Number(value || 0) * 100).toFixed(1)}%`;
+}
+
+function rankLabel(value) {
+  return value ? `#${value}` : "Unranked";
 }
 
 function requestJson(url, options = {}) {
@@ -73,8 +94,49 @@ function updateThemeClasses(element, prefix, value) {
   element.classList.add(`${prefix}${value}`);
 }
 
+function setFormDisabled(disabled) {
+  formEl.querySelectorAll("input, textarea, button").forEach((element) => {
+    element.disabled = disabled;
+  });
+}
+
+function renderSignedOutState(message) {
+  state.profile = null;
+  state.badges = [];
+  state.cosmetics = null;
+  state.stats = null;
+  state.ranks = null;
+
+  displayNameEl.textContent = "Pixel Spinner";
+  usernameEl.textContent = "@guest";
+  bioEl.textContent = "Sign in from the main game page to unlock profile editing, badges, and leaderboard cosmetics.";
+  modeMetaEl.textContent = "Difficulty unset";
+  rankGlobalEl.textContent = "Unranked";
+  rankModeEl.textContent = "Unranked";
+  difficultyEl.textContent = "Unset";
+  totalDepositEl.textContent = "R0";
+  depositCapEl.textContent = "R0";
+  accountDaysEl.textContent = "0";
+  hitRateEl.textContent = "0.0%";
+  avatarImageEl.src = "";
+  avatarImageEl.classList.add("is-hidden");
+  avatarInitialsEl.classList.remove("is-hidden");
+  avatarInitialsEl.textContent = "PS";
+  bannerEl.style.backgroundImage = "";
+  bannerEl.classList.remove("profile-banner--uploaded");
+  updateThemeClasses(cardEl, "skin-theme-", "skyline");
+  updateThemeClasses(bannerEl, "banner-theme-", "aurora");
+  updateThemeClasses(avatarEl, "avatar-theme-", "orbit");
+  badgeGridEl.innerHTML = `<div class="badge-card badge-card--empty">Sign in and spin to earn profile badges.</div>`;
+  skinOptionsEl.innerHTML = "";
+  bannerOptionsEl.innerHTML = "";
+  avatarOptionsEl.innerHTML = "";
+  setFormDisabled(true);
+  profileStatusEl.textContent = message;
+}
+
 function renderProfileCard() {
-  if (!state.profile) {
+  if (!state.profile || !state.stats || !state.ranks) {
     return;
   }
 
@@ -104,10 +166,14 @@ function renderProfileCard() {
   displayNameEl.textContent = state.profile.displayName;
   usernameEl.textContent = `@${state.profile.username}`;
   bioEl.textContent = state.profile.bio || "Add a short bio so other players know what kind of spinner you are.";
-  rankTopSpinEl.textContent = state.ranks?.globalTopSpinRank ? `#${state.ranks.globalTopSpinRank}` : "Unranked";
-  rankFrequencyEl.textContent = state.ranks?.frequentWinnerRank ? `#${state.ranks.frequentWinnerRank}` : "Unranked";
-  accountDaysEl.textContent = state.stats?.accountDays ?? 0;
-  hitRateEl.textContent = percent(state.stats?.hitRate ?? 0);
+  modeMetaEl.textContent = `${state.stats.difficultyLabel} class • ${state.ranks.isTopTen ? "Top 10 unlocks active" : "Standard unlock track"}`;
+  rankGlobalEl.textContent = rankLabel(state.ranks.globalRank);
+  rankModeEl.textContent = rankLabel(state.ranks.modeRank);
+  difficultyEl.textContent = state.stats.difficultyLabel;
+  totalDepositEl.textContent = currency(state.stats.totalDeposit);
+  depositCapEl.textContent = currency(state.stats.maxDepositLimit);
+  accountDaysEl.textContent = String(state.stats.accountDays ?? 0);
+  hitRateEl.textContent = percent(state.stats.hitRate);
 
   displayNameInputEl.value = state.profile.displayName;
   bioInputEl.value = state.profile.bio;
@@ -122,13 +188,83 @@ function renderBadges() {
 
   for (const badge of state.badges) {
     const node = document.createElement("article");
-    node.className = `badge-card badge-card--${badge.tone}`;
+    node.className = `badge badge--${badge.shape || 'hexagon'} badge--${badge.tone || 'bronze'}`;
+    if (badge.animation) {
+      node.classList.add(`badge--${badge.animation}`);
+    }
     node.innerHTML = `
-      <strong>${badge.name}</strong>
-      <p>${badge.description}</p>
+      <span class="badge__icon">${getBadgeIcon(badge.tone)}</span>
+      <span class="badge__label">${badge.name}</span>
     `;
+    node.title = badge.description;
     badgeGridEl.appendChild(node);
   }
+}
+
+function getBadgeIcon(tone) {
+  const icons = {
+    blue: "◆",
+    gold: "★",
+    green: "✦",
+    rose: "♦",
+    indigo: "◈",
+    orange: "●",
+    violet: "◇",
+  };
+  return icons[tone] || "◆";
+}
+
+function renderAchievements() {
+  if (!state.achievements.length) {
+    achievementGridEl.innerHTML = `<div class="badge-card badge-card--empty">Start playing to unlock achievements.</div>`;
+    return;
+  }
+
+  const filtered = state.achievementFilter === "all" 
+    ? state.achievements 
+    : state.achievements.filter(a => a.category === state.achievementFilter);
+
+  achievementGridEl.innerHTML = "";
+  
+  for (const achievement of filtered) {
+    const card = document.createElement("article");
+    card.className = `achievement-card ${achievement.unlocked ? "" : "achievement-card--locked"}`;
+    
+    card.innerHTML = `
+      <div class="achievement-card__badge">
+        <div class="badge badge--${achievement.shape || 'hexagon'} badge--${achievement.rarity || 'bronze'} ${achievement.animation ? `badge--${achievement.animation}` : ''}">
+          <span>${achievement.unlocked ? getAchievementIcon(achievement.rarity) : "?"}</span>
+        </div>
+      </div>
+      <div class="achievement-card__content">
+        <strong>${achievement.unlocked ? achievement.name : "???"}</strong>
+        <p>${achievement.unlocked ? achievement.description : "Keep playing to unlock this achievement."}</p>
+        <div class="achievement-card__meta">
+          <span class="achievement-card__category">${achievement.category}</span>
+          <span class="achievement-card__rarity achievement-card__rarity--${achievement.rarity || 'bronze'}">${achievement.rarity || 'bronze'}</span>
+        </div>
+      </div>
+    `;
+    achievementGridEl.appendChild(card);
+  }
+}
+
+function getAchievementIcon(rarity) {
+  const icons = {
+    bronze: "●",
+    silver: "◐",
+    gold: "★",
+    platinum: "✦",
+    diamond: "◆",
+    radiant: "✴",
+  };
+  return icons[rarity] || "●";
+}
+
+function updateAchievementStats() {
+  achievementsUnlockedEl.textContent = state.achievementsUnlocked;
+  achievementsTotalEl.textContent = state.achievementsTotal;
+  achievementsProgressEl.textContent = `${state.achievementsProgress}%`;
 }
 
 function renderOptions(container, items, selectedId, type) {
@@ -136,15 +272,19 @@ function renderOptions(container, items, selectedId, type) {
   for (const item of items) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `cosmetic-card ${selectedId === item.id ? "is-selected" : ""}`;
+    button.disabled = !item.unlocked;
+    button.className = `cosmetic-card ${selectedId === item.id && item.unlocked ? "is-selected" : ""} ${item.unlocked ? "" : "is-locked"}`;
     button.dataset.value = item.id;
     button.dataset.type = type;
     button.innerHTML = `
-      <span class="cosmetic-card__tag">${item.elite ? "Top 10" : "Unlocked"}</span>
+      <span class="cosmetic-card__tag">${item.tag}</span>
       <strong>${item.name}</strong>
-      <small>${item.id.replace(/_/g, " ")}</small>
+      <small>${item.requirementText}</small>
     `;
     button.addEventListener("click", () => {
+      if (!state.profile || !item.unlocked) {
+        return;
+      }
       if (type === "skin") {
         state.profile.selectedSkin = item.id;
       } else if (type === "banner") {
@@ -160,6 +300,9 @@ function renderOptions(container, items, selectedId, type) {
 }
 
 function renderCosmetics() {
+  if (!state.profile) {
+    return;
+  }
   renderOptions(skinOptionsEl, state.cosmetics?.skins || [], state.profile.selectedSkin, "skin");
   renderOptions(bannerOptionsEl, state.cosmetics?.banners || [], state.profile.selectedBanner, "banner");
   renderOptions(avatarOptionsEl, state.cosmetics?.avatars || [], state.profile.selectedAvatar, "avatar");
@@ -167,10 +310,11 @@ function renderCosmetics() {
 
 function applyPayload(payload) {
   state.profile = payload.profile;
-  state.badges = payload.badges;
-  state.cosmetics = payload.cosmetics;
+  state.badges = payload.badges || [];
+  state.cosmetics = payload.cosmetics || { skins: [], banners: [], avatars: [] };
   state.stats = payload.stats;
   state.ranks = payload.ranks;
+  setFormDisabled(false);
   renderProfileCard();
   renderBadges();
   renderCosmetics();
@@ -180,14 +324,45 @@ async function loadProfile() {
   try {
     const payload = await requestJson("/api/profile");
     applyPayload(payload);
-    profileStatusEl.textContent = "Profile synced with live server badges.";
+    profileStatusEl.textContent = "Profile synced with live server progress.";
   } catch (error) {
-    profileStatusEl.textContent = error.message;
+    renderSignedOutState(error.message.includes("sign in") ? error.message : "Sign in to view and edit your profile.");
   }
 }
 
+async function loadAchievements() {
+  try {
+    const data = await requestJson("/api/achievements");
+    state.achievements = data.achievements;
+    state.achievementsTotal = data.total;
+    state.achievementsUnlocked = data.unlocked;
+    state.achievementsProgress = data.progress;
+    updateAchievementStats();
+    renderAchievements();
+    achievementStatusEl.textContent = `${data.unlocked}/${data.total} achievements unlocked.`;
+  } catch (error) {
+    achievementStatusEl.textContent = error.message.includes("sign in") ? "Sign in to view achievements." : error.message;
+    state.achievements = [];
+  }
+}
+
+// Achievement filter handling
+document.querySelectorAll(".achievement-filter").forEach(button => {
+  button.addEventListener("click", () => {
+    state.achievementFilter = button.dataset.filter;
+    document.querySelectorAll(".achievement-filter").forEach(b => {
+      b.classList.toggle("is-active", b === button);
+    });
+    renderAchievements();
+  });
+});
+
 async function submitProfile(event) {
   event.preventDefault();
+  if (!state.profile) {
+    profileStatusEl.textContent = "Sign in to save profile changes.";
+    return;
+  }
   try {
     const payload = await requestJson("/api/profile", {
       method: "POST",
@@ -218,7 +393,7 @@ async function submitProfile(event) {
 
 avatarUploadInputEl.addEventListener("change", async () => {
   const [file] = avatarUploadInputEl.files;
-  if (!file) {
+  if (!file || !state.profile) {
     return;
   }
   try {
@@ -232,7 +407,7 @@ avatarUploadInputEl.addEventListener("change", async () => {
 
 bannerUploadInputEl.addEventListener("change", async () => {
   const [file] = bannerUploadInputEl.files;
-  if (!file) {
+  if (!file || !state.profile) {
     return;
   }
   try {
@@ -245,6 +420,9 @@ bannerUploadInputEl.addEventListener("change", async () => {
 });
 
 clearAvatarButtonEl.addEventListener("click", () => {
+  if (!state.profile) {
+    return;
+  }
   state.clearAvatar = true;
   state.avatarUpload = "";
   avatarUploadInputEl.value = "";
@@ -252,6 +430,9 @@ clearAvatarButtonEl.addEventListener("click", () => {
 });
 
 clearBannerButtonEl.addEventListener("click", () => {
+  if (!state.profile) {
+    return;
+  }
   state.clearBanner = true;
   state.bannerUpload = "";
   bannerUploadInputEl.value = "";
@@ -260,4 +441,6 @@ clearBannerButtonEl.addEventListener("click", () => {
 
 formEl.addEventListener("submit", submitProfile);
 
+renderSignedOutState("Loading profile...");
 loadProfile();
+loadAchievements();

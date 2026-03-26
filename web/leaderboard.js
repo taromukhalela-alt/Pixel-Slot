@@ -1,23 +1,17 @@
 const statusEl = document.getElementById("leaderboard-status");
 const bodyEl = document.getElementById("leaderboard-body");
 const emptyStateEl = document.getElementById("empty-state");
-const frequencyStatusEl = document.getElementById("frequency-status");
-const frequencyBodyEl = document.getElementById("frequency-body");
-const frequencyEmptyStateEl = document.getElementById("frequency-empty-state");
 
 const state = {
-  tier: "A",
+  board: "all",
+  data: null,
 };
 
 function currency(value) {
-  return `R${value}`;
+  return `R${Number(value).toFixed(2).replace(".00", "")}`;
 }
 
-function formatMultiplier(value) {
-  return `${Number(value).toFixed(2).replace(/\.00$/, "")}x`;
-}
-
-function formatPercent(value) {
+function percent(value) {
   return `${(Number(value) * 100).toFixed(1)}%`;
 }
 
@@ -30,61 +24,50 @@ async function requestJson(url) {
   return payload;
 }
 
-function renderRows(results) {
+function renderRows(rows) {
   bodyEl.innerHTML = "";
-  emptyStateEl.classList.toggle("is-hidden", results.length > 0);
-
-  for (const row of results) {
+  emptyStateEl.classList.toggle("is-hidden", rows.length > 0);
+  for (const row of rows) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${row.rank}</td>
       <td>${row.displayName || row.username}</td>
-      <td>${formatMultiplier(row.luckMultiplier)}</td>
-      <td>${currency(row.winAmount)}</td>
+      <td>${row.difficultyLabel}</td>
+      <td>${currency(row.totalDeposit)}</td>
+      <td>${percent(row.luckyRatio)}</td>
+      <td>${percent(row.unluckyRatio)}</td>
+      <td>${row.score.toFixed(2)}</td>
     `;
     bodyEl.appendChild(tr);
   }
 }
 
-function renderFrequencyRows(results) {
-  frequencyBodyEl.innerHTML = "";
-  frequencyEmptyStateEl.classList.toggle("is-hidden", results.length > 0);
-
-  for (const row of results) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row.rank}</td>
-      <td>${row.displayName || row.username}</td>
-      <td>${row.luckyRollCount} / ${row.totalSpins}</td>
-      <td>${formatPercent(row.hitRate)}</td>
-      <td>${currency(row.bestWin)}</td>
-    `;
-    frequencyBodyEl.appendChild(tr);
+function renderCurrentBoard() {
+  if (!state.data) {
+    return;
   }
+  const rows = state.data[state.board] || [];
+  renderRows(rows);
+  statusEl.textContent = `Showing ${rows.length} players on the ${state.board === "all" ? "Global" : state.board[0].toUpperCase() + state.board.slice(1)} board`;
 }
 
 async function loadLeaderboard() {
-  statusEl.textContent = `Loading Tier ${state.tier}...`;
-  frequencyStatusEl.textContent = `Loading Tier ${state.tier} consistency...`;
+  statusEl.textContent = "Loading leaderboards...";
   try {
-    const payload = await requestJson(`/api/leaderboard?tier=${state.tier}`);
-    renderRows(payload.topSpins);
-    renderFrequencyRows(payload.frequentWinners);
-    statusEl.textContent = `Showing Tier ${payload.tier} top 100 single-spin results`;
-    frequencyStatusEl.textContent = `Showing Tier ${payload.tier} top 100 frequent winners`;
+    state.data = await requestJson("/api/leaderboard");
+    renderCurrentBoard();
   } catch (error) {
     statusEl.textContent = error.message;
-    frequencyStatusEl.textContent = error.message;
   }
 }
 
-document.querySelectorAll("[data-tier]").forEach((button) => {
+document.querySelectorAll("[data-board]").forEach((button) => {
   button.addEventListener("click", () => {
-    state.tier = button.dataset.tier;
-    document.querySelectorAll("[data-tier]").forEach((candidate) => {
+    state.board = button.dataset.board;
+    document.querySelectorAll("[data-board]").forEach((candidate) => {
       candidate.classList.toggle("is-active", candidate === button);
     });
-    loadLeaderboard();
+    renderCurrentBoard();
   });
 });
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Leaderboard | Pixel Slot Studio</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -15,15 +16,16 @@
             <a class="topbar__link" href="/">Game</a>
             <a class="topbar__link" href="/profile">Profile</a>
             <a class="topbar__link topbar__link--active" href="/leaderboard">Leaderboard</a>
+            <a class="topbar__link" href="/store">Store</a>
             <a class="topbar__link" href="/creator">Creator</a>
           </div>
         </nav>
 
         <div class="hero__copy">
-          <p class="eyebrow">Multi-tier leaderboard</p>
-          <h1>Top 100 luckiest spins in each deposit tier.</h1>
+          <p class="eyebrow">Unified leaderboards</p>
+          <h1>Easy, Medium, Hard, and Global all score by deposits plus win ratio.</h1>
           <p class="hero__text">
-            Ranked by highest single-spin multiplier, then win amount. Tiering is fixed when the spin is recorded.
+            Rankings use total deposit progression plus `wins / total games`, so every difficulty stays comparable inside its own class and in the global board.
           </p>
         </div>
         <div class="hero__orbs" aria-hidden="true">
@@ -37,17 +39,18 @@
         <section class="panel leaderboard-panel">
           <div class="panel__header">
             <div>
-              <p class="panel__eyebrow">Tiers</p>
-              <h2>Switch between leaderboard buckets</h2>
-              <p class="panel__subtext">Tier A: under R200, Tier B: R200 to R5000, Tier C: over R5000.</p>
+              <p class="panel__eyebrow">Classes</p>
+              <h2>Switch between the four boards</h2>
+              <p class="panel__subtext">Hard players can be demoted on bankruptcy, Medium players ride pity, and Easy players manage a shrinking cap on losses.</p>
             </div>
-            <div class="status-pill" id="leaderboard-status">Loading leaderboard...</div>
+            <div class="status-pill" id="leaderboard-status">Loading leaderboards...</div>
           </div>
 
-          <div class="segmented-control segmented-control--wide">
-            <button class="segment is-active" data-tier="A" type="button">Tier A</button>
-            <button class="segment" data-tier="B" type="button">Tier B</button>
-            <button class="segment" data-tier="C" type="button">Tier C</button>
+          <div class="segmented-control segmented-control--wide segmented-control--four">
+            <button class="segment is-active" data-board="all" type="button">Global</button>
+            <button class="segment" data-board="easy" type="button">Easy</button>
+            <button class="segment" data-board="medium" type="button">Medium</button>
+            <button class="segment" data-board="hard" type="button">Hard</button>
           </div>
 
           <div class="table-shell">
@@ -55,50 +58,23 @@
               <thead>
                 <tr>
                   <th>Rank</th>
-                  <th>Username</th>
-                  <th>Luck Multiplier</th>
-                  <th>Win Amount</th>
+                  <th>Player</th>
+                  <th>Difficulty</th>
+                  <th>Total Deposit</th>
+                  <th>Lucky Ratio</th>
+                  <th>Unlucky Ratio</th>
+                  <th>Score</th>
                 </tr>
               </thead>
               <tbody id="leaderboard-body"></tbody>
             </table>
-            <div id="empty-state" class="empty-state is-hidden">No spins recorded for this tier yet.</div>
-          </div>
-        </section>
-
-        <section class="panel leaderboard-panel leaderboard-panel--secondary">
-          <div class="panel__header">
-            <div>
-              <p class="panel__eyebrow">Consistency</p>
-              <h2>Players who hit lucky rolls most often</h2>
-              <p class="panel__subtext">
-                Ranked by total winning spins, then hit rate, then best multiplier within the active tier.
-              </p>
-            </div>
-            <div class="status-pill" id="frequency-status">Loading winner frequency...</div>
-          </div>
-
-          <div class="table-shell">
-            <table class="leaderboard-table">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Username</th>
-                  <th>Lucky Rolls</th>
-                  <th>Hit Rate</th>
-                  <th>Best Win</th>
-                </tr>
-              </thead>
-              <tbody id="frequency-body"></tbody>
-            </table>
-            <div id="frequency-empty-state" class="empty-state is-hidden">
-              No winning spins recorded for this tier yet.
-            </div>
+            <div id="empty-state" class="empty-state is-hidden">No ranked players for this board yet.</div>
           </div>
         </section>
       </main>
     </div>
 
+    <script src="/theme.js" defer></script>
     <script src="/leaderboard.js" defer></script>
   </body>
 </html>

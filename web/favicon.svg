@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Cyber-Gold Gradient -->
+    <linearGradient id="cyberGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700"/>
+      <stop offset="25%" style="stop-color:#ffec80"/>
+      <stop offset="50%" style="stop-color:#ffd700"/>
+      <stop offset="75%" style="stop-color:#daa520"/>
+      <stop offset="100%" style="stop-color:#b8860b"/>
+    </linearGradient>
+    
+    <!-- Hexagon Rand Symbol Gradient -->
+    <linearGradient id="hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700"/>
+      <stop offset="50%" style="stop-color:#ffb300"/>
+      <stop offset="100%" style="stop-color:#ff8f00"/>
+    </linearGradient>
+    
+    <!-- Glow Effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background Hexagon (South African Rand inspired) -->
+  <polygon 
+    points="32,4 56,18 56,46 32,60 8,46 8,18" 
+    fill="url(#hexGradient)" 
+    stroke="#b8860b" 
+    stroke-width="2"
+    filter="url(#glow)"
+  />
+  
+  <!-- Inner Hexagon Ring -->
+  <polygon 
+    points="32,10 50,21 50,43 32,54 14,43 14,21" 
+    fill="none" 
+    stroke="#fff8dc" 
+    stroke-width="1.5"
+    opacity="0.6"
+  />
+  
+  <!-- Stylized "A" Letter -->
+  <text 
+    x="32" 
+    y="42" 
+    font-family="Arial, sans-serif" 
+    font-size="28" 
+    font-weight="900" 
+    fill="#1a1a2e" 
+    text-anchor="middle"
+    dominant-baseline="middle"
+  >A</text>
+  
+  <!-- Accent dots -->
+  <circle cx="32" cy="8" r="2" fill="#fff"/>
+  <circle cx="54" cy="32" r="1.5" fill="#fff" opacity="0.7"/>
+  <circle cx="10" cy="32" r="1.5" fill="#fff" opacity="0.7"/>
+</svg>
