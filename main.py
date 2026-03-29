@@ -44,8 +44,9 @@ CLASS_CONFIG = {
         "bankruptcy_protection": True,
         "min_tda_floor": 10.0,
         "recharge_cooldown_hours": 24,
-        "a_denominator": 1000.0,
-        "deposit_cap": 1000.0,  # Can move up to R1,000 to play balance
+        "a_denominator": 1000.0,  # Worst A-odds (1 in 1000)
+        "s_denominator": 5000.0,  # S-value odds (1 in 5000)
+        "deposit_cap": 500.0,  # R500 per transfer
     },
     "medium": {
         "name": "Medium",
@@ -54,8 +55,9 @@ CLASS_CONFIG = {
         "bankruptcy_protection": True,
         "min_tda_floor": 10.0,
         "recharge_cooldown_hours": 48,
-        "a_denominator": 200.0,
-        "deposit_cap": 500.0,  # Can move up to R500 to play balance
+        "a_denominator": 500.0,  # Medium A-odds (1 in 500)
+        "s_denominator": 3000.0,  # S-value odds (1 in 3000)
+        "deposit_cap": 100.0,  # R100 per transfer
     },
     "hard": {
         "name": "Hard",
@@ -64,7 +66,8 @@ CLASS_CONFIG = {
         "bankruptcy_protection": False,  # Game Over allowed
         "min_tda_floor": 0.0,
         "recharge_cooldown_hours": None,  # No recharge available
-        "a_denominator": 50.0,  # Better odds than before (was 10)
+        "a_denominator": 50.0,  # Best A-odds (1 in 50)
+        "s_denominator": 1000.0,  # S-value odds (1 in 1000)
         "deposit_cap": None,  # No limit - can transfer any amount
     },
 }
@@ -369,6 +372,10 @@ ACHIEVEMENTS = {
     "a_triple": {"name": "Triple A-Value", "description": "Hit 3 consecutive A-values in a single spin", "category": "rarity", "requirement": {"type": "a_streak_single", "value": 3}, "rarity": "gold", "shape": "star", "icon": "🅰️"},
     **{f"a_hits_{n}": {"name": f"{n}x A-Hitter", "description": f"Hit A-value symbols {n} times", "category": "rarity", "requirement": {"type": "a_hits", "value": n}, "rarity": "silver" if n <= 10 else "gold" if n <= 50 else "platinum", "shape": "hexagon", "icon": "🅰️"} for n in [5, 10, 25, 50, 100]},
     **{f"a_streak_{n}": {"name": f"{n}-Spin A-Streak", "description": f"Hit A-values for {n} consecutive spins", "category": "rarity", "requirement": {"type": "a_streak", "value": n}, "rarity": "platinum" if n >= 5 else "diamond", "shape": "star", "icon": "🔥"} for n in [3, 5, 10]},
+    # S-Value Achievements (100x multiplier, extremely rare)
+    "first_s": {"name": "First S-Value", "description": "Hit your first S-value symbol", "category": "rarity", "requirement": {"type": "s_hits", "value": 1}, "rarity": "gold", "shape": "star", "icon": "⚡"},
+    "s_triple": {"name": "Triple S-Value", "description": "Hit 3 S-values in a single spin row", "category": "rarity", "requirement": {"type": "s_triple_single"}, "rarity": "mythic", "shape": "crown", "icon": "⚡"},
+    **{f"s_hits_{n}": {"name": f"{n}x S-Hunter", "description": f"Hit S-value symbols {n} times", "category": "rarity", "requirement": {"type": "s_hits", "value": n}, "rarity": "platinum" if n <= 3 else "diamond" if n <= 10 else "mythic", "shape": "star", "icon": "⚡"} for n in [1, 3, 5, 10, 25]},
     # Win Streaks
     **{f"streak_{n}": {"name": f"{n}-Win Streak", "description": f"Won {n} spins in a row", "category": "milestone", "requirement": {"type": "win_streak", "value": n}, "rarity": "bronze" if n <= 5 else "silver" if n <= 10 else "gold", "shape": "shield", "icon": "🔥"} for n in [3, 5, 10, 25, 50]},
     # Leaderboard
@@ -387,6 +394,7 @@ ACHIEVEMENTS = {
 }
 
 SYMBOL_VALUE = {
+    "S": 100,  # S-value: 100x bet multiplier, extremely rare
     "A": 35,
     "B": 25,
     "C": 15,
@@ -512,7 +520,10 @@ def check_consecutive_a(columns):
     return False
 
 
-def weighted_symbol(denominator):
+def weighted_symbol(denominator, s_denominator=None):
+    # Check for S-value first (extremely rare)
+    if s_denominator and random.random() < (1 / s_denominator):
+        return "S"
     if random.random() < (1 / denominator):
         return "A"
     population = [symbol for symbol, _weight in NON_A_WEIGHTS]
@@ -520,12 +531,12 @@ def weighted_symbol(denominator):
     return random.choices(population, weights=weights, k=1)[0]
 
 
-def generate_grid(denominator):
+def generate_grid(denominator, s_denominator=None):
     columns = []
     for _column in range(COLS):
         column = []
         for _row in range(ROWS):
-            column.append(weighted_symbol(denominator))
+            column.append(weighted_symbol(denominator, s_denominator))
         columns.append(column)
     return columns
 
@@ -694,6 +705,9 @@ class SlotStore:
                     "store_purchases": "INTEGER NOT NULL DEFAULT 0",
                     "selected_badge": "TEXT NOT NULL DEFAULT ''",
                     "selected_theme": "TEXT NOT NULL DEFAULT ''",
+                    # S-value tracking
+                    "total_s_hits": "INTEGER NOT NULL DEFAULT 0",
+                    "s_triple_hits": "INTEGER NOT NULL DEFAULT 0",
                     # TDA Economy System columns
                     "total_depositable_amount": "REAL NOT NULL DEFAULT 0",
                     "play_balance": "REAL NOT NULL DEFAULT 0",
@@ -768,6 +782,7 @@ class SlotStore:
         Get leaderboard rows ranked by Total Depositable Amount (TDA).
         
         TDA is the primary ranking metric in the new economy system.
+        Falls back to total_deposit for legacy users without TDA.
         """
         if difficulty and difficulty not in CLASS_CONFIG:
             raise ValueError("Unknown difficulty.")
@@ -776,22 +791,24 @@ class SlotStore:
             SELECT id,
                    username,
                    COALESCE(NULLIF(display_name, ''), username) AS display_name,
-                   selected_class,
-                   total_depositable_amount,
-                   total_deposit,
-                   total_wins,
-                   total_games,
-                   (CASE WHEN total_games > 0 THEN CAST(total_wins AS REAL) / total_games ELSE 0 END) AS lucky_ratio
+                   COALESCE(selected_class, difficulty_mode, 'easy') AS class_mode,
+                   COALESCE(total_depositable_amount, total_deposit, 0) AS tda,
+                   COALESCE(total_deposit, 0) AS total_deposit,
+                   COALESCE(total_wins, 0) AS total_wins,
+                   COALESCE(total_games, 0) AS total_games,
+                   (CASE WHEN COALESCE(total_games, 0) > 0
+                         THEN CAST(COALESCE(total_wins, 0) AS REAL) / COALESCE(total_games, 1)
+                         ELSE 0 END) AS lucky_ratio
             FROM users
-            WHERE selected_class <> ''
-              AND total_games > 0
+            WHERE COALESCE(selected_class, difficulty_mode, '') <> ''
+              AND COALESCE(total_games, 0) > 0
         """
         params = []
         if difficulty:
-            sql += " AND selected_class = %s"
+            sql += " AND COALESCE(selected_class, difficulty_mode) = %s"
             params.append(difficulty)
         sql += """
-            ORDER BY total_depositable_amount DESC,
+            ORDER BY tda DESC,
                      lucky_ratio DESC,
                      total_games DESC,
                      username ASC
@@ -803,10 +820,8 @@ class SlotStore:
         for index, row in enumerate(rows, start=1):
             lucky_ratio = round(row["lucky_ratio"] or 0, 4)
             unlucky_ratio = round(1 - lucky_ratio, 4)
-            # Use TDA as primary, fallback to total_deposit for legacy users
-            tda = row["total_depositable_amount"] or row["total_deposit"]
-            class_mode = row["selected_class"] or row.get("difficulty_mode", "easy")
-            # Score = TDA + lucky_ratio (same formula as legacy score_from_values)
+            tda = row["tda"] or 0
+            class_mode = row["class_mode"] or "easy"
             score = round(tda + lucky_ratio, 4)
             results.append(
                 {
@@ -815,8 +830,8 @@ class SlotStore:
                     "username": row["username"],
                     "displayName": row["display_name"],
                     "class": class_mode,
-                    "classLabel": CLASS_CONFIG[class_mode]["name"] if class_mode in CLASS_CONFIG else class_mode.title(),
-                    "difficultyLabel": CLASS_CONFIG[class_mode]["name"] if class_mode in CLASS_CONFIG else class_mode.title(),
+                    "classLabel": CLASS_CONFIG.get(class_mode, {}).get("name", class_mode.title()),
+                    "difficultyLabel": CLASS_CONFIG.get(class_mode, {}).get("name", class_mode.title()),
                     "tda": round(tda, 2),
                     "totalDeposit": round(tda, 2),
                     "luckyRatio": lucky_ratio,
@@ -1162,6 +1177,12 @@ class SlotStore:
             single_spin_wins = json.loads(row.get("single_spin_wins") or "{}")
             win_amount = str(req.get("value", 0))
             return win_amount in single_spin_wins
+        elif req_type == "s_hits":
+            # S-value achievements - count of S-value symbols hit
+            return row.get("total_s_hits", 0) >= req.get("value", 0)
+        elif req_type == "s_triple_single":
+            # S-value triple in a single spin
+            return row.get("s_triple_hits", 0) >= 1
         return False
 
     def _get_achievements(self, row, global_rank, mode_rank):
@@ -1236,8 +1257,8 @@ class SlotStore:
         """
         with self.lock, self.conn:
             row = self._user_row(user_id)
-            
-            tda_before = row['total_depositable_amount']
+
+            tda_before = row['total_depositable_amount'] or 0.0
             class_mode = row['selected_class'] or 'easy'
             config = CLASS_CONFIG.get(class_mode, CLASS_CONFIG['easy'])
             
@@ -1308,51 +1329,57 @@ class SlotStore:
         """
         if amount <= 0:
             raise ValueError("Amount must be positive.")
-        
+
+        amount = round(amount, 2)
+
         with self.lock, self.conn:
             row = self._user_row(user_id)
-            
-            if amount > row['total_depositable_amount']:
-                raise ValueError(f"Insufficient TDA. Have: R{row['total_depositable_amount']:.2f}")
-            
+
+            tda = row['total_depositable_amount'] or 0.0
+            play = row['play_balance'] or 0.0
+
+            if amount > tda:
+                raise ValueError(f"Insufficient Vault (TDA). You have R{tda:.2f} available.")
+
             # Check deposit cap for Easy/Medium
             class_mode = row['selected_class'] or 'easy'
             config = CLASS_CONFIG.get(class_mode, CLASS_CONFIG['easy'])
-            
+
             if config.get('deposit_cap') is not None:
-                max_deposit = min(row['total_depositable_amount'], config['deposit_cap'])
+                cap = round(config['deposit_cap'], 2)
+                max_deposit = min(tda, cap)
                 if amount > max_deposit:
-                    raise ValueError(f"Deposit cap: R{max_deposit:.2f}")
-            
-            # Atomic transfer
-            tda_before = row['total_depositable_amount']
-            play_before = row['play_balance']
-            
+                    raise ValueError(
+                        f"Transfer exceeds deposit cap of R{cap:.2f}. "
+                        f"You can move at most R{max_deposit:.2f} with your current Vault balance."
+                    )
+
+            # Atomic transfer (use COALESCE to guard against NULL columns)
             self.conn.execute(
                 """
                 UPDATE users
-                SET total_depositable_amount = total_depositable_amount - %s,
-                    play_balance = play_balance + %s,
+                SET total_depositable_amount = COALESCE(total_depositable_amount, 0) - %s,
+                    play_balance = COALESCE(play_balance, 0) + %s,
                     status = %s
                 WHERE id = %s
                 """,
                 (amount, amount, f"Moved R{amount:.2f} to play balance", user_id),
             )
-            
+
             # Record transaction
             self._record_transaction({
                 'user_id': user_id,
                 'transaction_type': 'deposit_to_play',
                 'amount': -amount,
-                'tda_before': tda_before,
-                'tda_after': tda_before - amount,
-                'play_balance_before': play_before,
-                'play_balance_after': play_before + amount,
+                'tda_before': tda,
+                'tda_after': tda - amount,
+                'play_balance_before': play,
+                'play_balance_after': play + amount,
             })
-            
+
             return {
-                'tda': tda_before - amount,
-                'play_balance': play_before + amount,
+                'tda': round(tda - amount, 2),
+                'play_balance': round(play + amount, 2),
             }
 
     def recharge_tda(self, user_id):
@@ -1849,12 +1876,15 @@ class SlotStore:
             if not selected_class:
                 raise ValueError("Choose a class before depositing.")
 
-            # Check deposit limit
-            max_deposit_limit = row.get("max_deposit_limit", 10000)
-            if amount > max_deposit_limit:
-                raise ValueError(
-                    f"Deposit amount cannot exceed your current limit of R{max_deposit_limit:.2f}."
-                )
+            # Check per-deposit cap (R500 for Easy, R100 for Medium, None for Hard)
+            # This limits how much you can deposit in one go
+            config = CLASS_CONFIG.get(selected_class, CLASS_CONFIG['easy'])
+            if config.get('deposit_cap') is not None:
+                cap = round(config['deposit_cap'], 2)
+                if amount > cap:
+                    raise ValueError(
+                        f"Single deposit cannot exceed R{cap:.2f} for {config['name']} class."
+                    )
 
             new_total_deposits = row["total_deposits_count"] + 1
             new_max_balance = max(row["max_balance"], amount)
@@ -1863,10 +1893,10 @@ class SlotStore:
             self.conn.execute(
                 """
                 UPDATE users
-                SET total_depositable_amount = total_depositable_amount + %s,
-                    total_deposit = total_deposit + %s,
-                    prestige_points = prestige_points + %s,
-                    total_pp_earned = total_pp_earned + %s,
+                SET total_depositable_amount = COALESCE(total_depositable_amount, 0) + %s,
+                    total_deposit = COALESCE(total_deposit, 0) + %s,
+                    prestige_points = COALESCE(prestige_points, 0) + %s,
+                    total_pp_earned = COALESCE(total_pp_earned, 0) + %s,
                     total_deposits_count = %s,
                     max_balance = %s,
                     status = %s
@@ -1924,9 +1954,10 @@ class SlotStore:
             # Get class config
             config = CLASS_CONFIG.get(class_mode, CLASS_CONFIG['easy'])
             denominator = row["current_a_denominator"] or config["a_denominator"]
+            s_denominator = config.get("s_denominator")
             
             # Generate spin result
-            columns = generate_grid(denominator)
+            columns = generate_grid(denominator, s_denominator)
             winnings, winning_lines = check_winnings(columns, bet_per_line)
             
             # Calculate net result
@@ -1942,9 +1973,17 @@ class SlotStore:
             consecutive_a_hits = row["consecutive_a_hits"]
             notes = []
             
-            # Count A-hits
+            # Count A-hits and S-hits
             a_count = sum(1 for col in columns for sym in col if sym == "A")
             total_a_hits = row["total_a_hits"] + a_count
+            s_count = sum(1 for col in columns for sym in col if sym == "S")
+            total_s_hits = row["total_s_hits"] + s_count
+            # Check for S-triple (3 S in one row)
+            s_triple_hits = row["s_triple_hits"]
+            for row_idx in range(ROWS):
+                if all(columns[col][row_idx] == "S" for col in range(COLS)):
+                    s_triple_hits += 1
+                    break
             
             # Calculate multiplier
             multiplier = (winnings / total_bet) if total_bet > 0 else 0
@@ -2020,6 +2059,8 @@ class SlotStore:
                     winning_lines = %s,
                     status = %s,
                     total_a_hits = %s,
+                    total_s_hits = %s,
+                    s_triple_hits = %s,
                     max_win_streak = %s,
                     max_multiplier = %s,
                     single_spin_wins = %s
@@ -2039,6 +2080,8 @@ class SlotStore:
                     json.dumps(winning_lines),
                     status,
                     total_a_hits,
+                    total_s_hits,
+                    s_triple_hits,
                     max_win_streak,
                     round(max_multiplier, 4),
                     json.dumps(single_spin_wins),

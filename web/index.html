@@ -8,34 +8,61 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <!-- Particle canvas overlay -->
+    <canvas id="particle-canvas" class="particle-canvas" aria-hidden="true"></canvas>
+
     <div class="app-shell">
+      <!-- Navigation -->
       <header class="hero">
         <nav class="topbar">
-          <a class="brandmark" href="/">Pixel Slot Studio</a>
+          <a class="brandmark" href="/">
+            <svg class="brandmark__icon" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+              <rect x="2" y="2" width="24" height="24" rx="6" stroke="currentColor" stroke-width="2"/>
+              <text x="14" y="19" text-anchor="middle" font-size="14" font-weight="800" fill="currentColor">A</text>
+            </svg>
+            <span>Pixel Slot Studio</span>
+          </a>
           <div class="topbar__links">
-            <a class="topbar__link topbar__link--active" href="/">Game</a>
-            <a class="topbar__link" href="/profile">Profile</a>
-            <a class="topbar__link" href="/leaderboard">Leaderboard</a>
-            <a class="topbar__link" href="/store">Store</a>
-            <a class="topbar__link" href="/creator">Creator</a>
+            <a class="topbar__link topbar__link--active" href="/">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l7 4v6l-7 4-7-4V5l7-4z"/></svg>
+              Game
+            </a>
+            <a class="topbar__link" href="/profile">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+              Profile
+            </a>
+            <a class="topbar__link" href="/leaderboard">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="8" width="4" height="7" rx="1"/><rect x="6" y="4" width="4" height="11" rx="1"/><rect x="11" y="6" width="4" height="9" rx="1"/></svg>
+              Leaderboard
+            </a>
+            <a class="topbar__link" href="/store">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 3h14l-1.5 9H2.5L1 3zM4 14a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z"/></svg>
+              Store
+            </a>
+            <a class="topbar__link" href="/creator">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5zM4 12.5c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/></svg>
+              Creator
+            </a>
           </div>
         </nav>
 
         <div class="hero__copy">
           <p class="eyebrow">Difficulty-driven slot challenge</p>
-          <h1>Choose a class, manage your cap, and push your score up the global board.</h1>
+          <h1>Spin. Score. Dominate.</h1>
           <p class="hero__text">
-            This is a play-money game only. All RNG, odds, rank changes, and balance logic happen on the server.
+            Choose a class, manage your vault, and push your score up the global board. Play money only.
           </p>
         </div>
         <div class="hero__orbs" aria-hidden="true">
           <span class="orb orb--blue"></span>
-          <span class="orb orb--green"></span>
-          <span class="orb orb--peach"></span>
+          <span class="orb orb--purple"></span>
+          <span class="orb orb--gold"></span>
         </div>
       </header>
 
+      <!-- Main Layout -->
       <main class="layout">
+        <!-- Slot Machine -->
         <section class="panel machine-panel">
           <div class="panel__header">
             <div>
@@ -75,10 +102,13 @@
             </article>
           </div>
 
-          <div class="reels" id="reels"></div>
+          <!-- Reel Machine -->
+          <div class="machine-frame">
+            <div class="reels" id="reels"></div>
+          </div>
 
           <p class="play-money-note">
-            All amounts shown in Pixel Slot Studio are fictional play money, not real currency.
+            All amounts shown are fictional play money, not real currency.
           </p>
 
           <!-- Session Stats HUD -->
@@ -97,10 +127,21 @@
             </div>
           </div>
 
+          <!-- Spin Controls -->
           <div class="machine-actions">
-            <button id="spin-button" class="button button--primary machine-spin-button" type="button">Spin reels</button>
-            <button id="turbo-toggle" class="turbo-toggle" type="button" aria-pressed="false">
-              <span class="turbo-indicator">⚡</span>
+            <button id="spin-button" class="btn btn--spin" type="button">
+              <svg class="btn__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                <path d="M10 3a7 7 0 016.5 9.5"/>
+                <path d="M10 3a7 7 0 00-5 2"/>
+                <path d="M17 13v4h-4"/>
+                <path d="M3 7v-4h4"/>
+              </svg>
+              <span>Spin Reels</span>
+            </button>
+            <button id="turbo-toggle" class="btn btn--turbo" type="button" aria-pressed="false">
+              <svg class="btn__icon" width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">
+                <path d="M9.5 1L4 10h4l-1.5 7 7-9h-4l2-7z"/>
+              </svg>
               <span class="turbo-label">Turbo</span>
             </button>
           </div>
@@ -108,7 +149,10 @@
           <!-- Auto-Spin Panel -->
           <div class="auto-spin-panel" id="auto-spin-panel">
             <div class="auto-spin-header">
-              <span class="auto-spin-title">🔄 Auto-Spin</span>
+              <span class="auto-spin-title">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2v5l3.5 2-.5 1-4-2.5V3z"/></svg>
+                Auto-Spin
+              </span>
               <div class="auto-spin-counts">
                 <button class="auto-spin-count" data-spins="10" type="button">10</button>
                 <button class="auto-spin-count" data-spins="25" type="button">25</button>
@@ -118,7 +162,7 @@
             <div class="auto-spin-options">
               <label for="auto-threshold">Stop at multiplier:</label>
               <input type="number" id="auto-threshold" class="auto-spin-threshold" value="5" min="1" step="1" />
-              <span style="color: var(--muted); font-size: 0.8rem;">×</span>
+              <span class="auto-spin-multiply">×</span>
             </div>
             <div class="auto-spin-progress" id="auto-spin-progress" style="display: none;">
               <span id="auto-spin-status">Spinning...</span>
@@ -127,27 +171,36 @@
               </div>
               <span id="auto-spin-countdown">0/0</span>
             </div>
-            <button id="auto-spin-start" class="auto-spin-start" type="button">▶ Start Auto-Spin</button>
-            <button id="auto-spin-stop" class="auto-spin-stop" type="button" style="display: none;">■ Stop Auto-Spin</button>
+            <button id="auto-spin-start" class="btn btn--auto-start" type="button">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><polygon points="3,1 12,7 3,13"/></svg>
+              Start Auto-Spin
+            </button>
+            <button id="auto-spin-stop" class="btn btn--auto-stop" type="button" style="display: none;">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="2" width="10" height="10" rx="1"/></svg>
+              Stop Auto-Spin
+            </button>
           </div>
 
+          <!-- Result Strip -->
           <div class="result-strip">
-            <div>
+            <div class="result-strip__item">
               <span class="result-strip__label">Last win</span>
               <strong id="last-win">R0</strong>
             </div>
-            <div>
+            <div class="result-strip__item">
               <span class="result-strip__label">Net change</span>
               <strong id="last-net">R0</strong>
             </div>
-            <div>
+            <div class="result-strip__item">
               <span class="result-strip__label">Winning lines</span>
               <strong id="winning-lines">-</strong>
             </div>
           </div>
         </section>
 
+        <!-- Sidebar -->
         <aside class="sidebar">
+          <!-- Auth Panel -->
           <section class="panel auth-panel">
             <div class="panel__header compact">
               <div>
@@ -171,7 +224,7 @@
                   <span>Password</span>
                   <input id="password-input" type="password" minlength="8" autocomplete="current-password" />
                 </label>
-                <button id="auth-submit" class="button button--primary" type="submit">Login</button>
+                <button id="auth-submit" class="btn btn--primary" type="submit">Login</button>
               </form>
             </div>
 
@@ -188,14 +241,15 @@
                 <span>Top 10 unlocks</span>
                 <strong id="top-ten-display">Locked</strong>
               </div>
-              <button id="choose-mode-button" class="button button--soft button--block" type="button">Select mode</button>
+              <button id="choose-mode-button" class="btn btn--soft btn--block" type="button">Select mode</button>
               <p class="account-summary__hint" id="mode-reset-hint">Changing mode resets your current run history and leaderboard score.</p>
-              <a class="button button--soft button--block" href="/profile">Open profile</a>
-              <a class="button button--ghost button--block" href="/leaderboard">Open leaderboard</a>
-              <button id="logout-button" class="button button--ghost button--block" type="button">Logout</button>
+              <a class="btn btn--soft btn--block" href="/profile">Open profile</a>
+              <a class="btn btn--ghost btn--block" href="/leaderboard">Open leaderboard</a>
+              <button id="logout-button" class="btn btn--ghost btn--block" type="button">Logout</button>
             </div>
           </section>
 
+          <!-- Vault Panel -->
           <section class="panel controls-panel">
             <div class="panel__header compact">
               <div>
@@ -204,7 +258,6 @@
               </div>
             </div>
 
-            <!-- Vault Display -->
             <div class="vault-display" id="vault-display">
               <div class="vault-stat">
                 <span class="vault-stat__label">Vault (TDA)</span>
@@ -220,29 +273,33 @@
               </div>
             </div>
 
-            <!-- Step 1: Add to Vault (TDA) -->
             <label class="field">
               <span>Add to Vault</span>
               <div class="field__row">
                 <input id="deposit-input" type="number" min="1" step="1" value="200" />
-                <button id="deposit-button" class="button button--soft" type="button">Add to Vault</button>
+                <button id="deposit-button" class="btn btn--soft" type="button">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                  Add
+                </button>
               </div>
               <small class="field__hint">Funds go to your Vault (TDA). Then transfer to Play Balance below.</small>
             </label>
 
-            <!-- Step 2: Deposit to Play Balance -->
             <label class="field">
               <span>Deposit to Play</span>
               <div class="field__row">
                 <input id="deposit-to-play-input" type="number" min="1" step="1" value="100" />
-                <button id="deposit-to-play-button" class="button button--primary" type="button">Deposit to Play</button>
+                <button id="deposit-to-play-button" class="btn btn--primary" type="button">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10V3M4 6l3-3 3 3"/></svg>
+                  Deposit
+                </button>
               </div>
               <small class="field__hint" id="deposit-to-play-hint">Move funds from Vault to Play Balance for betting.</small>
             </label>
 
-            <!-- Recharge Button (Easy/Medium only) -->
             <div class="recharge-section" id="recharge-section" style="display: none;">
-              <button id="recharge-button" class="button button--soft button--block" type="button" disabled>
+              <button id="recharge-button" class="btn btn--soft btn--block" type="button" disabled>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 7a6 6 0 0111-3M13 7a6 6 0 01-11 3"/><path d="M12 1v3h-3M2 13v-3h3"/></svg>
                 Recharge Vault
               </button>
               <small class="field__hint" id="recharge-hint">Available after cooldown when TDA hits floor.</small>
@@ -254,25 +311,35 @@
                 <strong id="bet-value">10</strong>
               </div>
               <div class="bet-input-group">
-                <button data-adjust="bet" data-delta="-1" aria-label="Decrease bet" type="button">-</button>
+                <button class="btn btn--bet" data-adjust="bet" data-delta="-1" aria-label="Decrease bet" type="button">-</button>
                 <input type="number" id="bet-text-input" class="bet-text-input" value="10" min="1" aria-label="Enter bet amount" />
-                <button data-adjust="bet" data-delta="1" aria-label="Increase bet" type="button">+</button>
+                <button class="btn btn--bet" data-adjust="bet" data-delta="1" aria-label="Increase bet" type="button">+</button>
               </div>
             </div>
 
-            <!-- Easy Mode Cap Warning -->
             <div class="easy-cap-warning" id="easy-cap-warning" style="display: none;">
-              <span class="easy-cap-warning__icon">⚠️</span>
-              <span>Easy Mode has a deposit cap of <strong id="easy-cap-amount">R1,000</strong> per transfer.</span>
+              <svg class="easy-cap-warning__icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l7 14H1L8 1zm0 5v4m0 2v1"/></svg>
+              <span>Deposit cap: <strong id="easy-cap-amount">R500</strong> per transfer.</span>
             </div>
           </section>
         </aside>
       </main>
     </div>
 
-    <div id="difficulty-modal" class="difficulty-modal is-hidden">
-      <div class="difficulty-card">
-        <div class="difficulty-card__header">
+    <!-- Big Win Overlay -->
+    <div id="win-overlay" class="win-overlay is-hidden">
+      <div class="win-overlay__content">
+        <div class="win-overlay__sparks" aria-hidden="true"></div>
+        <p class="win-overlay__label">BIG WIN</p>
+        <p class="win-overlay__amount" id="win-overlay-amount">R0</p>
+        <p class="win-overlay__multiplier" id="win-overlay-multiplier"></p>
+      </div>
+    </div>
+
+    <!-- Difficulty Modal -->
+    <div id="difficulty-modal" class="modal-overlay is-hidden">
+      <div class="modal-card">
+        <div class="modal-card__header">
           <div>
             <p class="panel__eyebrow" id="difficulty-eyebrow">Choose your class</p>
             <h2 id="difficulty-title">Pick your class</h2>
@@ -280,12 +347,13 @@
               Each class has different starting TDA, odds, deposit caps, and risk/reward profiles.
             </p>
           </div>
-          <button id="difficulty-close-button" class="button button--ghost difficulty-close is-hidden" type="button">Close</button>
+          <button id="difficulty-close-button" class="btn btn--ghost difficulty-close is-hidden" type="button">Close</button>
         </div>
         <div class="difficulty-grid" id="difficulty-grid"></div>
       </div>
     </div>
 
+    <!-- Templates -->
     <template id="reel-template">
       <div class="reel">
         <div class="reel__viewport">
